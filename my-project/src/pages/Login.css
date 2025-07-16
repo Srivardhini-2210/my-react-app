@@ -1,0 +1,11 @@
+/* Login.css */
+
+.bg-container {
+  background-image: url('/bg.jpg'); /* NOT ./ or ../ */
+  background-size: cover;
+  background-position: center;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
