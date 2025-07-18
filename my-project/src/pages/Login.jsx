@@ -1,3 +1,4 @@
+//Login.jsx
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
@@ -43,16 +44,16 @@ const Login = () => {
 
   return (
     <div
-      className="w-screen h-screen bg-cover bg-center flex items-center justify-center"
+      className="fixed inset-0 bg-cover bg-center flex items-center justify-center px-4"
       style={{ backgroundImage: "url('/bg.jpg')" }}
     >
-      <div className="w-[90%] max-w-md p-6 bg-white text-base rounded-xl shadow-lg flex flex-col items-center gap-4">
+      <div className="w-[90%] max-w-md p-6 rounded-2xl shadow-[0_0_20px_#1e3a8a] flex flex-col items-center gap-4 backdrop-blur-sm bg-[#0b1c36] bg-opacity-95 border border-blue-700">
         <img src="/logo.png" alt="logo" className="w-20" />
-        <h1 className="text-2xl font-bold">Welcome Back</h1>
+        <h1 className="text-2xl font-bold text-white">Login</h1>
 
-        <p className="text-sm text-gray-700 text-center">
+        <p className="text-sm text-blue-200 text-center">
           Don’t have an account?{" "}
-          <Link to="/signup" className="text-blue-500 hover:underline">
+          <Link to="/signup" className="text-blue-400 hover:underline font-semibold">
             Sign up
           </Link>
         </p>
@@ -60,7 +61,7 @@ const Login = () => {
         <input
           type="email"
           placeholder="Email address"
-          className="w-full p-2 rounded-xl bg-gray-100 placeholder-gray-500"
+          className="w-full p-3 rounded-xl bg-[#1a2a45] text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all duration-300 hover:shadow-[0_0_12px_#2563eb]"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
         />
@@ -69,12 +70,12 @@ const Login = () => {
           <input
             type={showPassword ? "text" : "password"}
             placeholder="Password"
-            className="w-full p-2 pr-10 rounded-xl bg-gray-100 placeholder-gray-500"
+            className="w-full p-3 pr-10 rounded-xl bg-[#1a2a45] text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all duration-300 hover:shadow-[0_0_12px_#2563eb]"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
           />
           <span
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 cursor-pointer"
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-300 cursor-pointer"
             onClick={() => setShowPassword((prev) => !prev)}
           >
             {showPassword ? <FaEyeSlash /> : <FaEye />}
@@ -83,20 +84,20 @@ const Login = () => {
 
         <button
           onClick={handleLogin}
-          className="w-full bg-blue-500 py-2 rounded-xl text-black hover:bg-blue-600"
+          className="w-full bg-blue-600 py-2 rounded-xl text-black font-bold transition duration-300 hover:bg-blue-700 hover:shadow-[0_0_15px_#3b82f6]"
         >
           Login
         </button>
 
         <div className="flex items-center w-full my-3">
-          <div className="flex-grow h-px bg-gray-300"></div>
-          <span className="px-3 text-gray-500 text-sm">Or</span>
-          <div className="flex-grow h-px bg-gray-300"></div>
+          <div className="flex-grow h-px bg-blue-300"></div>
+          <span className="px-3 text-blue-200 text-sm">Or</span>
+          <div className="flex-grow h-px bg-blue-300"></div>
         </div>
 
         <div
           onClick={handleGoogleLogin}
-          className="p-2 bg-slate-100 border-2 border-blue-400 rounded-2xl flex justify-center items-center cursor-pointer hover:bg-slate-200 w-full"
+          className="p-2 bg-white border-2 border-blue-600 rounded-2xl flex justify-center items-center cursor-pointer hover:bg-gray-100 w-full transition duration-300 hover:shadow-[0_0_12px_#3b82f6]"
         >
           <img src="/google.png" alt="google-icon" className="w-6 h-6 mr-3" />
           <span className="text-black font-semibold">Login with Google</span>

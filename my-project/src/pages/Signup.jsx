@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { createUserWithEmailAndPassword, signInWithPopup } from "firebase/auth";
+import { createUserWithEmailAndPassword, signInWithPopup, updateProfile } from "firebase/auth";
 import { auth, provider } from "../firebase";
 import { useNavigate, Link } from "react-router-dom";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
@@ -7,6 +7,7 @@ import { FaEye, FaEyeSlash } from "react-icons/fa";
 const Signup = () => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
+    username: "",     // <-- Added
     email: "",
     password: "",
     confirmPassword: "",
@@ -14,7 +15,11 @@ const Signup = () => {
   const [showPassword, setShowPassword] = useState(false);
 
   const handleSignup = () => {
-    const { email, password, confirmPassword } = formData;
+    const { username, email, password, confirmPassword } = formData;
+    if (!username) {
+      alert("Please enter a username");
+      return;
+    }
     if (password !== confirmPassword) {
       alert("Passwords do not match");
       return;
@@ -22,8 +27,11 @@ const Signup = () => {
 
     createUserWithEmailAndPassword(auth, email, password)
       .then((res) => {
-        alert("Account created");
-        navigate("/dashboard");
+        // Set the displayName to the entered username
+        updateProfile(res.user, { displayName: username }).then(() => {
+          alert("Account created");
+          navigate("/dashboard");
+        });
       })
       .catch((err) => {
         console.error(err);
@@ -49,7 +57,7 @@ const Signup = () => {
     >
       <div className="w-[90%] max-w-md p-5 bg-white flex flex-col items-center gap-3 rounded-xl shadow-lg">
         <img src="/logo.png" alt="logo" className="w-20" />
-         <h1 className="text-2xl font-bold">Create Account</h1>
+        <h1 className="text-2xl font-bold">Create Account</h1>
 
         <p className="text-sm text-gray-600 text-center">
           Already have an account?{" "}
@@ -57,6 +65,16 @@ const Signup = () => {
             Login
           </Link>
         </p>
+
+        {/* Username Field */}
+        <input
+          type="text"
+          placeholder="Username"
+          className="w-full mb-2 p-2 rounded bg-gray-100 text-gray-900"
+          onChange={(e) =>
+            setFormData({ ...formData, username: e.target.value })
+          }
+        />
 
         <input
           type="email"
