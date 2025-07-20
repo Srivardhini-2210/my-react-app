@@ -1,137 +1,471 @@
 import React, { useState } from "react";
-import { createUserWithEmailAndPassword, signInWithPopup, updateProfile } from "firebase/auth";
-import { auth, provider } from "../firebase";
-import { useNavigate, Link } from "react-router-dom";
-import { FaEye, FaEyeSlash } from "react-icons/fa";
+import { useNavigate } from "react-router-dom";
+import { createUserWithEmailAndPassword } from "firebase/auth";
+import { auth } from "../firebase";
+import { collection, addDoc } from "firebase/firestore";
+import { db } from "../firebase";
+
+import {
+  FaEye,
+  FaEyeSlash,
+  FaLaptopCode,
+  FaBullhorn,
+  FaPaintBrush,
+  FaBrain,
+  FaCloud,
+  FaLock,
+  FaBriefcase,
+  FaRobot,
+  FaChalkboardTeacher,
+  FaComments,
+  FaProjectDiagram,
+  FaChartLine,
+} from "react-icons/fa";
+
+const interestOptions = [
+  { label: "Programming", icon: <FaLaptopCode /> },
+  { label: "Digital Marketing", icon: <FaBullhorn /> },
+  { label: "UI/UX Design", icon: <FaPaintBrush /> },
+  { label: "AI/ML", icon: <FaBrain /> },
+  { label: "Data Science", icon: <FaChartLine /> },
+  { label: "NLP", icon: <FaRobot /> },
+  { label: "Leadership", icon: <FaChalkboardTeacher /> },
+  { label: "Communication", icon: <FaComments /> },
+  { label: "Cloud Computing", icon: <FaCloud /> },
+  { label: "Cybersecurity", icon: <FaLock /> },
+  { label: "Project Management", icon: <FaProjectDiagram /> },
+  { label: "Business", icon: <FaBriefcase /> },
+];
+
+const isValidEmail = (email) => {
+  // Simple email regex pattern
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+};
 
 const Signup = () => {
   const navigate = useNavigate();
+  const [step, setStep] = useState(1);
+  const [showPassword, setShowPassword] = useState(false);
+
   const [formData, setFormData] = useState({
-    username: "",     // <-- Added
+    fullName: "",
     email: "",
     password: "",
     confirmPassword: "",
+    dob: "",
+    gender: "",
+    educationLevel: "",
+    domainOfEducation: "",
+    profession: "",
+    country: "",
+    interests: [],
   });
-  const [showPassword, setShowPassword] = useState(false);
 
-  const handleSignup = () => {
-    const { username, email, password, confirmPassword } = formData;
-    if (!username) {
-      alert("Please enter a username");
+  const handleInterestChange = (interest) => {
+    setFormData((prev) => {
+      const interests = prev.interests.includes(interest)
+        ? prev.interests.filter((i) => i !== interest)
+        : [...prev.interests, interest];
+      return { ...prev, interests };
+    });
+  };
+
+  // Step validation functions
+  const isStep1Valid = () => {
+    if (
+      !formData.fullName.trim() ||
+      !formData.email.trim() ||
+      !formData.password ||
+      !formData.confirmPassword
+    )
+      return false;
+    if (!isValidEmail(formData.email)) return false;
+    if (formData.password.length < 6) return false;
+    if (formData.password !== formData.confirmPassword) return false;
+    return true;
+  };
+
+  const isStep2Valid = () => {
+    if (
+      !formData.dob ||
+      !formData.gender ||
+      !formData.educationLevel ||
+      !formData.profession ||
+      !formData.country
+    )
+      return false;
+    if (
+      formData.educationLevel === "Higher Studies" &&
+      !formData.domainOfEducation.trim()
+    )
+      return false;
+    return true;
+  };
+
+  const isStep3Valid = () => {
+    return formData.interests.length > 0;
+  };
+
+  // Next button handler (step validation still helpful for alerts)
+  const handleNext = () => {
+    if (step === 1 && !isStep1Valid()) {
+      alert("Please fill all Step 1 fields correctly.");
+      return;
+    }
+    if (step === 2 && !isStep2Valid()) {
+      alert("Please fill all Step 2 fields correctly.");
+      return;
+    }
+    setStep((prev) => prev + 1);
+  };
+
+  const handleSubmit = async () => {
+    const {
+      fullName,
+      email,
+      password,
+      confirmPassword,
+      dob,
+      gender,
+      educationLevel,
+      profession,
+      country,
+      interests,
+    } = formData;
+
+    // Required checks
+    if (
+      !fullName ||
+      !email ||
+      !password ||
+      !confirmPassword ||
+      !dob ||
+      !gender ||
+      !educationLevel ||
+      !profession ||
+      !country ||
+      interests.length === 0
+    ) {
+      alert("Please fill out all fields.");
+      return;
+    }
+
+    // Additional validation as final safety
+    if (!isValidEmail(email)) {
+      alert("Please enter a valid email address.");
       return;
     }
     if (password !== confirmPassword) {
-      alert("Passwords do not match");
+      alert("Passwords do not match.");
+      return;
+    }
+    if (password.length < 6) {
+      alert("Password should be at least 6 characters.");
       return;
     }
 
-    createUserWithEmailAndPassword(auth, email, password)
-      .then((res) => {
-        // Set the displayName to the entered username
-        updateProfile(res.user, { displayName: username }).then(() => {
-          alert("Account created");
-          navigate("/dashboard");
-        });
-      })
-      .catch((err) => {
-        console.error(err);
-        alert("Signup failed");
+    try {
+      // Firebase signup
+      await createUserWithEmailAndPassword(auth, email, password);
+      // Firestore record
+      const docRef = await addDoc(collection(db, "users"), {
+        ...formData,
+        createdAt: new Date(),
       });
-  };
+      console.log("Document written with ID: ", docRef.id);
 
-  const handleGoogleSignup = () => {
-    signInWithPopup(auth, provider)
-      .then((res) => {
-        alert(`Welcome, ${res.user.displayName}`);
-        navigate("/dashboard");
-      })
-      .catch((err) => {
-        alert("Google Sign-in failed");
-      });
+      navigate("/dashboard");
+    } catch (error) {
+      console.error("Error during signup:", error.message);
+      alert("Signup failed. Please try again.");
+    }
   };
 
   return (
     <div
-      className="w-screen h-screen bg-cover bg-center flex items-center justify-center"
+      className="fixed inset-0 bg-cover bg-center flex items-center justify-center px-4"
       style={{ backgroundImage: "url('/bg.jpg')" }}
     >
-      <div className="w-[90%] max-w-md p-5 bg-white flex flex-col items-center gap-3 rounded-xl shadow-lg">
-        <img src="/logo.png" alt="logo" className="w-20" />
-        <h1 className="text-2xl font-bold">Create Account</h1>
-
-        <p className="text-sm text-gray-600 text-center">
-          Already have an account?{" "}
-          <Link to="/" className="text-blue-500 hover:underline">
-            Login
-          </Link>
-        </p>
-
-        {/* Username Field */}
-        <input
-          type="text"
-          placeholder="Username"
-          className="w-full mb-2 p-2 rounded bg-gray-100 text-gray-900"
-          onChange={(e) =>
-            setFormData({ ...formData, username: e.target.value })
-          }
-        />
-
-        <input
-          type="email"
-          placeholder="Email"
-          className="w-full mb-2 p-2 rounded bg-gray-100 text-gray-900"
-          onChange={(e) =>
-            setFormData({ ...formData, email: e.target.value })
-          }
-        />
-
-        <div className="relative w-full">
-          <input
-            type={showPassword ? "text" : "password"}
-            placeholder="Password"
-            className="w-full mb-2 p-2 rounded bg-gray-100 text-gray-900 pr-10"
-            onChange={(e) =>
-              setFormData({ ...formData, password: e.target.value })
-            }
+      <div className="w-full max-w-2xl bg-[#0f172a] text-white p-6 rounded-xl shadow-2xl border border-blue-800 overflow-y-auto max-h-[90vh]">
+        <div className="w-full bg-gray-700 h-2 rounded-full mb-4">
+          <div
+            className={`h-2 rounded-full transition-all duration-500 ${
+              step === 1
+                ? "w-1/3 bg-blue-500"
+                : step === 2
+                ? "w-2/3 bg-yellow-400"
+                : "w-full bg-green-400"
+            }`}
           />
-          <span
-            className="absolute top-1/2 right-3 transform -translate-y-1/2 text-gray-600 cursor-pointer"
-            onClick={() => setShowPassword((prev) => !prev)}
-          >
-            {showPassword ? <FaEyeSlash /> : <FaEye />}
-          </span>
         </div>
 
-        <input
-          type="password"
-          placeholder="Confirm Password"
-          className="w-full mb-2 p-2 rounded bg-gray-100 text-gray-900"
-          onChange={(e) =>
-            setFormData({ ...formData, confirmPassword: e.target.value })
-          }
-        />
-
-        <button
-          onClick={handleSignup}
-          className="w-full p-2 bg-blue-500 text-black font-semibold rounded-xl hover:bg-blue-600 mt-1"
-        >
-          Create Account
-        </button>
-
-        <div className="flex items-center w-full my-3">
-          <div className="flex-grow h-px bg-gray-300"></div>
-          <span className="px-3 text-gray-500 text-sm">Or</span>
-          <div className="flex-grow h-px bg-gray-300"></div>
+        <div className="text-lg font-bold mb-4 text-blue-300">
+          Step {step} of 3
         </div>
 
-        <div
-          onClick={handleGoogleSignup}
-          className="p-2 bg-slate-100 border-4 border-blue-400 rounded-2xl flex justify-center items-center cursor-pointer hover:bg-slate-200"
-        >
-          <img src="/google.png" alt="google-icon" className="w-6 h-6 mr-3" />
-          <span className="text-black font-semibold text-sm md:text-base">
-            Sign up with Google
-          </span>
+        {/* Step 1: Account Info */}
+        {step === 1 && (
+          <div className="flex flex-col gap-3">
+            <div className="font-semibold text-blue-300 text-xl text-center mb-4">
+              CREATE ACCOUNT
+            </div>
+            <input
+              placeholder="Full Name"
+              className="p-2 rounded bg-slate-800 text-white placeholder-gray-400 shadow hover:shadow-blue-400 focus:shadow-blue-500 focus:outline-none"
+              value={formData.fullName}
+              onChange={(e) =>
+                setFormData({ ...formData, fullName: e.target.value })
+              }
+            />
+            <input
+              placeholder="Email"
+              type="email"
+              className="p-2 rounded bg-slate-800 text-white placeholder-gray-400 shadow hover:shadow-blue-400 focus:shadow-blue-500 focus:outline-none"
+              value={formData.email}
+              onChange={(e) =>
+                setFormData({ ...formData, email: e.target.value })
+              }
+            />
+            <div className="relative">
+              <input
+                placeholder="Password"
+                type={showPassword ? "text" : "password"}
+                className="p-2 rounded bg-slate-800 text-white placeholder-gray-400 w-full pr-10 shadow hover:shadow-blue-400 focus:shadow-blue-500 focus:outline-none"
+                value={formData.password}
+                onChange={(e) =>
+                  setFormData({ ...formData, password: e.target.value })
+                }
+              />
+              <span
+                onClick={() => setShowPassword((show) => !show)}
+                className="absolute top-2 right-3 cursor-pointer text-gray-400"
+              >
+                {showPassword ? <FaEyeSlash /> : <FaEye />}
+              </span>
+            </div>
+            <input
+              placeholder="Confirm Password"
+              type="password"
+              className="p-2 rounded bg-slate-800 text-white placeholder-gray-400 shadow hover:shadow-blue-400 focus:shadow-blue-500 focus:outline-none"
+              value={formData.confirmPassword}
+              onChange={(e) =>
+                setFormData({ ...formData, confirmPassword: e.target.value })
+              }
+            />
+          </div>
+        )}
+
+        {/* Step 2: Personal Info */}
+        {step === 2 && (
+          <div className="flex flex-col gap-3">
+            <div className="font-semibold text-blue-300 text-xl text-center mb-4">
+              👤 PERSONAL INFORMATION
+            </div>
+            <label className="font-semibold text-blue-300">DOB</label>
+            <input
+              type="date"
+              className="p-2 rounded bg-slate-800 text-white placeholder-gray-400 shadow hover:shadow-blue-400 focus:shadow-blue-500 focus:outline-none"
+              value={formData.dob}
+              onChange={(e) =>
+                setFormData({ ...formData, dob: e.target.value })
+              }
+            />
+            <select
+              className="p-2 rounded bg-slate-800 text-white shadow hover:shadow-blue-400 focus:shadow-blue-500 focus:outline-none"
+              value={formData.gender}
+              onChange={(e) =>
+                setFormData({ ...formData, gender: e.target.value })
+              }
+            >
+              <option value="">Select Gender</option>
+              <option value="Male">Male</option>
+              <option value="Female">Female</option>
+              <option value="Other">Other</option>
+            </select>
+
+            <div className="flex flex-col gap-1">
+              <label className="font-semibold text-blue-300">
+                Education Level
+              </label>
+              <div className="flex gap-4">
+                <label>
+                  <input
+                    type="radio"
+                    name="edu"
+                    value="School"
+                    checked={formData.educationLevel === "School"}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        educationLevel: e.target.value,
+                        domainOfEducation: "",
+                      })
+                    }
+                  />{" "}
+                  School
+                </label>
+                <label>
+                  <input
+                    type="radio"
+                    name="edu"
+                    value="Higher Studies"
+                    checked={formData.educationLevel === "Higher Studies"}
+                    onChange={(e) =>
+                      setFormData({
+                        ...formData,
+                        educationLevel: e.target.value,
+                      })
+                    }
+                  />{" "}
+                  Higher Studies
+                </label>
+              </div>
+              {formData.educationLevel === "Higher Studies" && (
+                <input
+                  placeholder="Domain of Education"
+                  className="p-2 rounded bg-slate-800 text-white shadow hover:shadow-blue-400 focus:shadow-blue-500 focus:outline-none"
+                  value={formData.domainOfEducation}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      domainOfEducation: e.target.value,
+                    })
+                  }
+                />
+              )}
+            </div>
+
+            <select
+              className="p-2 rounded bg-slate-800 text-white shadow hover:shadow-blue-400 focus:shadow-blue-500 focus:outline-none"
+              value={formData.profession}
+              onChange={(e) =>
+                setFormData({
+                  ...formData,
+                  profession: e.target.value,
+                })
+              }
+            >
+              <option value="">Select Profession</option>
+              <option value="Student">Student</option>
+              <option value="Developer">Developer</option>
+              <option value="Designer">Designer</option>
+              <option value="Teacher">Teacher</option>
+              <option value="Accountant">Accountant</option>
+              <option value="Administrative Assistant">
+                Administrative Assistant
+              </option>
+              <option value="Architect">Architect</option>
+              <option value="Customer Service Representative">
+                Customer Service Representative
+              </option>
+              <option value="Data Analyst">Data Analyst</option>
+              <option value="Data Scientist">Data Scientist</option>
+              <option value="Doctor">Doctor</option>
+              <option value="Digital Marketer">Digital Marketer</option>
+              <option value="Electrician">Electrician</option>
+              <option value="Engineer">Engineer</option>
+              <option value="Financial Analyst">Financial Analyst</option>
+              <option value="Graphic Designer">Graphic Designer</option>
+              <option value="HR Manager">HR Manager</option>
+              <option value="Lawyer">Lawyer</option>
+              <option value="Marketing Manager">Marketing Manager</option>
+              <option value="Medical Assistant">Medical Assistant</option>
+              <option value="Nurse">Nurse</option>
+              <option value="Project Manager">Project Manager</option>
+              <option value="Sales Representative">Sales Representative</option>
+              <option value="Software Developer">Software Developer</option>
+              <option value="Software Engineer">Software Engineer</option>
+              <option value="UX Designer">UX Designer</option>
+              <option value="Web Developer">Web Developer</option>
+              <option value="Web Designer">Web Designer</option>
+              <option value="Looking for Opportunities">
+                Looking for Opportunities
+              </option>
+              <option value="Other">Other</option>
+            </select>
+
+            <input
+              placeholder="Country"
+              className="p-2 rounded bg-slate-800 text-white shadow hover:shadow-blue-400 focus:shadow-blue-500 focus:outline-none"
+              value={formData.country}
+              onChange={(e) =>
+                setFormData({ ...formData, country: e.target.value })
+              }
+            />
+          </div>
+        )}
+
+        {/* Step 3: Interests */}
+        {step === 3 && (
+          <div className="flex flex-col gap-4">
+            <div className="font-semibold text-blue-300 text-xl text-center mb-4">
+              DOMAIN OF INTEREST
+            </div>
+            <div className="flex flex-wrap gap-3 justify-center">
+              {interestOptions.map(({ label, icon }) => {
+                const isSelected = formData.interests.includes(label);
+                return (
+                  <button
+                    key={label}
+                    type="button"
+                    onClick={() => handleInterestChange(label)}
+                    className={`flex items-center gap-2 px-5 py-2 rounded-full border-2 transition-all duration-300 font-semibold text-gray-900
+                  ${
+                    isSelected
+                      ? "bg-blue-300 border-blue-400 shadow-[0_0_15px_#3b82f6]"
+                      : "bg-blue-100 border-blue-200 hover:shadow-[0_0_10px_#60a5fa]"
+                  }`}
+                  >
+                    {icon}
+                    <span className="text-gray-900">{label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Navigation Buttons */}
+        <div className="flex justify-between mt-6">
+          {step > 1 && (
+            <button
+              onClick={() => setStep((prev) => prev - 1)}
+              className="px-4 py-2 bg-slate-600 rounded shadow text-black hover:shadow-blue-500 transition"
+            >
+              Back
+            </button>
+          )}
+          {step < 3 ? (
+            <button
+              onClick={handleNext}
+              disabled={
+                (step === 1 && !isStep1Valid()) ||
+                (step === 2 && !isStep2Valid())
+              }
+              className={`ml-auto px-4 py-2 rounded text-black shadow hover:shadow-blue-500 transition
+              ${
+                (step === 1 && !isStep1Valid()) ||
+                (step === 2 && !isStep2Valid())
+                  ? "bg-blue-300 opacity-60 cursor-not-allowed"
+                  : "bg-blue-600"
+              }`}
+            >
+              Next
+            </button>
+          ) : (
+            <button
+              onClick={handleSubmit}
+              disabled={!isStep3Valid()}
+              className={`ml-auto px-4 py-2 rounded shadow text-black hover:shadow-blue-500 transition
+              ${
+                !isStep3Valid()
+                  ? "bg-green-300 opacity-60 cursor-not-allowed"
+                  : "bg-green-600"
+              }`}
+            >
+              Create Account
+            </button>
+          )}
         </div>
       </div>
     </div>
