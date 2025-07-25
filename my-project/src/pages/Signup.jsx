@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { createUserWithEmailAndPassword } from "firebase/auth";
 import { auth } from "../firebase";
-import { collection, addDoc } from "firebase/firestore";
+import { collection, addDoc, setDoc, doc } from "firebase/firestore";  // Fixed: Added setDoc and doc
 import { db } from "../firebase";
 
 import {
@@ -61,6 +61,14 @@ const Signup = () => {
     interests: [],
   });
 
+  // State for real-time error messages
+  const [errors, setErrors] = useState({
+    email: "",
+    password: "",
+    confirmPassword: "",
+    dob: "", // For DOB errors
+  });
+
   const handleInterestChange = (interest) => {
     setFormData((prev) => {
       const interests = prev.interests.includes(interest)
@@ -70,7 +78,98 @@ const Signup = () => {
     });
   };
 
-  // Step validation functions
+  // Validate email on change
+  const handleEmailChange = (e) => {
+    const email = e.target.value;
+    setFormData({ ...formData, email });
+    setErrors((prev) => ({
+      ...prev,
+      email: email && !isValidEmail(email) ? "Please enter a valid email address." : "",
+    }));
+  };
+
+  // Validate password on change
+  const handlePasswordChange = (e) => {
+    const password = e.target.value;
+    setFormData({ ...formData, password });
+    setErrors((prev) => ({
+      ...prev,
+      password: password && password.length < 6 ? "Password should be at least 6 characters." : "",
+      confirmPassword:
+        formData.confirmPassword && password !== formData.confirmPassword
+          ? "Passwords do not match."
+          : "",
+    }));
+  };
+
+  // Validate confirm password on change
+  const handleConfirmPasswordChange = (e) => {
+    const confirmPassword = e.target.value;
+    setFormData({ ...formData, confirmPassword });
+    setErrors((prev) => ({
+      ...prev,
+      confirmPassword:
+        confirmPassword && formData.password !== confirmPassword ? "Passwords do not match." : "",
+    }));
+  };
+
+  // NEW: Validate DOB on change or blur
+  const handleDobChange = (e) => {
+    const dob = e.target.value;
+    console.log("DOB changed to:", dob); // Debug: Check if onChange fires
+    setFormData({ ...formData, dob });
+    validateDob(dob);
+  };
+
+  const handleDobBlur = () => {
+    console.log("DOB input blurred"); // Debug: Check if onBlur fires
+    validateDob(formData.dob);
+  };
+
+  const validateDob = (dob) => {
+    let ageError = "";
+
+    if (dob) {
+      const [year, month, day] = dob.split("-").map(Number);
+
+      // Check if date is valid
+      const isValidDate = () => {
+        if (month < 1 || month > 12 || day < 1 || day > 31) return false;
+        const maxDaysInMonth = new Date(year, month, 0).getDate(); // Get last day of month
+        if (day > maxDaysInMonth) return false;
+        // Leap year check for February
+        if (month === 2 && day === 29) {
+          if (!(year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0))) return false;
+        }
+        return true;
+      };
+
+      if (!isValidDate()) {
+        ageError = "Please select a valid date.";
+      } else {
+        const birthDate = new Date(year, month - 1, day);
+        const today = new Date();
+        if (birthDate > today) {
+          ageError = "Please select a valid past date.";
+        } else {
+          let age = today.getFullYear() - birthDate.getFullYear();
+          const monthDiff = today.getMonth() - birthDate.getMonth();
+          if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+            age--;
+          }
+          console.log("Calculated age:", age); // Debug: Check calculated age
+          if (age < 10) {
+            ageError = "You must be at least 10 years old to sign up.";
+          }
+        }
+      }
+    }
+
+    console.log("DOB Error set to:", ageError); // Debug: Confirm error is set
+    setErrors((prev) => ({ ...prev, dob: ageError }));
+  };
+
+  // Step validation functions (for button disabling)
   const isStep1Valid = () => {
     if (
       !formData.fullName.trim() ||
@@ -91,7 +190,8 @@ const Signup = () => {
       !formData.gender ||
       !formData.educationLevel ||
       !formData.profession ||
-      !formData.country
+      !formData.country ||
+      errors.dob // Check for DOB error
     )
       return false;
     if (
@@ -128,12 +228,13 @@ const Signup = () => {
       dob,
       gender,
       educationLevel,
+      domainOfEducation,
       profession,
       country,
       interests,
     } = formData;
 
-    // Required checks
+    // Required checks (your existing validation)
     if (
       !fullName ||
       !email ||
@@ -150,7 +251,6 @@ const Signup = () => {
       return;
     }
 
-    // Additional validation as final safety
     if (!isValidEmail(email)) {
       alert("Please enter a valid email address.");
       return;
@@ -163,21 +263,47 @@ const Signup = () => {
       alert("Password should be at least 6 characters.");
       return;
     }
+    if (errors.dob) {
+      alert(errors.dob);
+      return;
+    }
 
     try {
-      // Firebase signup
-      await createUserWithEmailAndPassword(auth, email, password);
-      // Firestore record
-      const docRef = await addDoc(collection(db, "users"), {
-        ...formData,
-        createdAt: new Date(),
-      });
-      console.log("Document written with ID: ", docRef.id);
+      // Create user with Firebase Auth
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
 
-      navigate("/dashboard");
+      // Prepare profile data (exclude passwords)
+      const profileData = {
+        fullName,
+        email,
+        dob,
+        gender,
+        educationLevel,
+        domainOfEducation: educationLevel === "Higher Studies" ? domainOfEducation : "",
+        profession,
+        country,
+        interests,
+        createdAt: new Date(),
+      };
+
+      // Store in Firestore using user's UID as document ID
+      await setDoc(doc(db, "users", user.uid), profileData);
+      console.log("User profile stored successfully with UID: ", user.uid);
+
+      // Navigate to login or home
+      navigate("/");
     } catch (error) {
-      console.error("Error during signup:", error.message);
-      alert("Signup failed. Please try again.");
+      console.error("Error during signup:", error);  // Log full error for debugging
+      if (error.code === "auth/email-already-in-use") {
+        alert("This email is already registered. Please log in instead.");
+      } else if (error.code === "auth/invalid-email") {
+        alert("Invalid email format.");
+      } else if (error.code === "auth/weak-password") {
+        alert("Password is too weak. Please choose a stronger one.");
+      } else {
+        alert(`Signup failed: ${error.message}`);  // Show full message for better debugging
+      }
     }
   };
 
@@ -211,47 +337,50 @@ const Signup = () => {
             </div>
             <input
               placeholder="Full Name"
-              className="p-2 rounded bg-slate-800 text-white placeholder-gray-400 shadow hover:shadow-blue-400 focus:shadow-blue-500 focus:outline-none"
+              className="w-full p-2 rounded bg-slate-800 text-white placeholder-gray-400 shadow hover:shadow-blue-400 focus:shadow-blue-500 focus:outline-none"
               value={formData.fullName}
               onChange={(e) =>
                 setFormData({ ...formData, fullName: e.target.value })
               }
             />
-            <input
-              placeholder="Email"
-              type="email"
-              className="p-2 rounded bg-slate-800 text-white placeholder-gray-400 shadow hover:shadow-blue-400 focus:shadow-blue-500 focus:outline-none"
-              value={formData.email}
-              onChange={(e) =>
-                setFormData({ ...formData, email: e.target.value })
-              }
-            />
-            <div className="relative">
+            <div className="flex flex-col gap-1">
               <input
-                placeholder="Password"
-                type={showPassword ? "text" : "password"}
-                className="p-2 rounded bg-slate-800 text-white placeholder-gray-400 w-full pr-10 shadow hover:shadow-blue-400 focus:shadow-blue-500 focus:outline-none"
-                value={formData.password}
-                onChange={(e) =>
-                  setFormData({ ...formData, password: e.target.value })
-                }
+                placeholder="Email"
+                type="email"
+                className="w-full p-2 rounded bg-slate-800 text-white placeholder-gray-400 shadow hover:shadow-blue-400 focus:shadow-blue-500 focus:outline-none"
+                value={formData.email}
+                onChange={handleEmailChange}
               />
-              <span
-                onClick={() => setShowPassword((show) => !show)}
-                className="absolute top-2 right-3 cursor-pointer text-gray-400"
-              >
-                {showPassword ? <FaEyeSlash /> : <FaEye />}
-              </span>
+              {errors.email && <p className="text-red-400 text-sm">{errors.email}</p>}
             </div>
-            <input
-              placeholder="Confirm Password"
-              type="password"
-              className="p-2 rounded bg-slate-800 text-white placeholder-gray-400 shadow hover:shadow-blue-400 focus:shadow-blue-500 focus:outline-none"
-              value={formData.confirmPassword}
-              onChange={(e) =>
-                setFormData({ ...formData, confirmPassword: e.target.value })
-              }
-            />
+            <div className="flex flex-col gap-1">
+              <div className="relative">
+                <input
+                  placeholder="Password"
+                  type={showPassword ? "text" : "password"}
+                  className="w-full p-2 rounded bg-slate-800 text-white placeholder-gray-400 pr-10 shadow hover:shadow-blue-400 focus:shadow-blue-500 focus:outline-none"
+                  value={formData.password}
+                  onChange={handlePasswordChange}
+                />
+                <span
+                  onClick={() => setShowPassword((show) => !show)}
+                  className="absolute top-2 right-3 cursor-pointer text-gray-400"
+                >
+                  {showPassword ? <FaEyeSlash /> : <FaEye />}
+                </span>
+              </div>
+              {errors.password && <p className="text-red-400 text-sm">{errors.password}</p>}
+            </div>
+            <div className="flex flex-col gap-1">
+              <input
+                placeholder="Confirm Password"
+                type="password"
+                className="w-full p-2 rounded bg-slate-800 text-white placeholder-gray-400 shadow hover:shadow-blue-400 focus:shadow-blue-500 focus:outline-none"
+                value={formData.confirmPassword}
+                onChange={handleConfirmPasswordChange}
+              />
+              {errors.confirmPassword && <p className="text-red-400 text-sm">{errors.confirmPassword}</p>}
+            </div>
           </div>
         )}
 
@@ -262,16 +391,21 @@ const Signup = () => {
               👤 PERSONAL INFORMATION
             </div>
             <label className="font-semibold text-blue-300">DOB</label>
-            <input
-              type="date"
-              className="p-2 rounded bg-slate-800 text-white placeholder-gray-400 shadow hover:shadow-blue-400 focus:shadow-blue-500 focus:outline-none"
-              value={formData.dob}
-              onChange={(e) =>
-                setFormData({ ...formData, dob: e.target.value })
-              }
-            />
+            <div className="flex flex-col gap-1">
+              <input
+                type="date"
+                className="w-full p-2 rounded bg-slate-800 text-white placeholder-gray-400 shadow hover:shadow-blue-400 focus:shadow-blue-500 focus:outline-none"
+                value={formData.dob}
+                onChange={handleDobChange}
+                onBlur={handleDobBlur} // Validate on blur as well
+                onKeyDown={(e) => e.preventDefault()} // Disable typing to force calendar picker only
+                max={new Date().toISOString().split("T")[0]} // No future dates
+                min={new Date(new Date().setFullYear(new Date().getFullYear() - 100)).toISOString().split("T")[0]} // Max 100 years ago
+              />
+              {errors.dob && <p className="text-red-500 text-sm p-1 bg-red-100 rounded">{errors.dob}</p>} 
+            </div>
             <select
-              className="p-2 rounded bg-slate-800 text-white shadow hover:shadow-blue-400 focus:shadow-blue-500 focus:outline-none"
+              className="w-full p-2 rounded bg-slate-800 text-white shadow hover:shadow-blue-400 focus:shadow-blue-500 focus:outline-none"
               value={formData.gender}
               onChange={(e) =>
                 setFormData({ ...formData, gender: e.target.value })
@@ -323,7 +457,7 @@ const Signup = () => {
               {formData.educationLevel === "Higher Studies" && (
                 <input
                   placeholder="Domain of Education"
-                  className="p-2 rounded bg-slate-800 text-white shadow hover:shadow-blue-400 focus:shadow-blue-500 focus:outline-none"
+                  className="w-full p-2 rounded bg-slate-800 text-white shadow hover:shadow-blue-400 focus:shadow-blue-500 focus:outline-none"
                   value={formData.domainOfEducation}
                   onChange={(e) =>
                     setFormData({
@@ -336,7 +470,7 @@ const Signup = () => {
             </div>
 
             <select
-              className="p-2 rounded bg-slate-800 text-white shadow hover:shadow-blue-400 focus:shadow-blue-500 focus:outline-none"
+              className="w-full p-2 rounded bg-slate-800 text-white shadow hover:shadow-blue-400 focus:shadow-blue-500 focus:outline-none"
               value={formData.profession}
               onChange={(e) =>
                 setFormData({
@@ -362,7 +496,7 @@ const Signup = () => {
               <option value="Data Scientist">Data Scientist</option>
               <option value="Doctor">Doctor</option>
               <option value="Digital Marketer">Digital Marketer</option>
-              <option value="Electrician">Electrician</option>
+          
               <option value="Engineer">Engineer</option>
               <option value="Financial Analyst">Financial Analyst</option>
               <option value="Graphic Designer">Graphic Designer</option>
@@ -386,7 +520,7 @@ const Signup = () => {
 
             <input
               placeholder="Country"
-              className="p-2 rounded bg-slate-800 text-white shadow hover:shadow-blue-400 focus:shadow-blue-500 focus:outline-none"
+              className="w-full p-2 rounded bg-slate-800 text-white shadow hover:shadow-blue-400 focus:shadow-blue-500 focus:outline-none"
               value={formData.country}
               onChange={(e) =>
                 setFormData({ ...formData, country: e.target.value })
@@ -410,11 +544,11 @@ const Signup = () => {
                     type="button"
                     onClick={() => handleInterestChange(label)}
                     className={`flex items-center gap-2 px-5 py-2 rounded-full border-2 transition-all duration-300 font-semibold text-gray-900
-                  ${
-                    isSelected
-                      ? "bg-blue-300 border-blue-400 shadow-[0_0_15px_#3b82f6]"
-                      : "bg-blue-100 border-blue-200 hover:shadow-[0_0_10px_#60a5fa]"
-                  }`}
+                    ${
+                      isSelected
+                        ? "bg-blue-300 border-blue-400 shadow-[0_0_15px_#3b82f6]"
+                        : "bg-blue-100 border-blue-200 hover:shadow-[0_0_10px_#60a5fa]"
+                    }`}
                   >
                     {icon}
                     <span className="text-gray-900">{label}</span>

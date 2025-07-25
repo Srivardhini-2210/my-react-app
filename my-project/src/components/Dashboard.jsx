@@ -1,9 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-//import mockCourses from "./mockCourses";
-// Ensure that you have exported mockCourses as default in that file
-import React from "react";
+import { auth } from "../firebase"; // Assuming firebase is configured in ../firebase
+// Removed unnecessary imports: doc, getDoc, db (if not using userInfo)
 
+// Just use regular object literals and arrays, no `interface`
 const mockCourses = [
   {
     id: "1",
@@ -32,7 +32,7 @@ const mockCourses = [
   {
     id: "3",
     title: "Digital Marketing Masterclass",
-    platform: "NPTEL",
+    platform: "LinkedIn Learning",
     price: "Free",
     duration: "30 hours",
     rating: 4.4,
@@ -45,6 +45,41 @@ const mockCourses = [
 
 const Dashboard = () => {
   const [savedCourses, setSavedCourses] = useState([]);
+  // Removed: const [userInfo, setUserInfo] = useState(null); // No longer needed
+  const [loading, setLoading] = useState(true); // Loading state for auth check
+  // Removed: const [showProfile, setShowProfile] = useState(false); // Removed as per request
+  const navigate = useNavigate();
+
+  // Simplified useEffect: Only check auth (removed userInfo fetch if not needed)
+  useEffect(() => {
+    const checkAuth = () => {
+      const user = auth.currentUser;
+      if (!user) {
+        // If no user is logged in, redirect to login
+        navigate("/");
+        return;
+      }
+      setLoading(false);
+    };
+
+    checkAuth();
+
+    // If you still need userInfo for something (e.g., personalized recommendations), uncomment and adapt:
+    // const fetchUserInfo = async () => {
+    //   try {
+    //     const userDocRef = doc(db, "users", user.uid);
+    //     const userDoc = await getDoc(userDocRef);
+    //     if (userDoc.exists()) {
+    //       setUserInfo(userDoc.data());
+    //     }
+    //   } catch (error) {
+    //     console.error("Error fetching user info:", error);
+    //   } finally {
+    //     setLoading(false);
+    //   }
+    // };
+    // fetchUserInfo();
+  }, [navigate]);
 
   const toggleSaveCourse = (courseId) => {
     setSavedCourses((prev) =>
@@ -54,8 +89,14 @@ const Dashboard = () => {
     );
   };
 
+  if (loading) {
+    return <div className="text-center py-8">Loading dashboard...</div>;
+  }
+
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
+      {/* Removed: Profile Button and Modal */}
+
       <div className="mb-8">
         <h2 className="text-3xl font-bold text-gray-900 mb-2">
           Discover Your Next Skill
@@ -111,4 +152,5 @@ const Dashboard = () => {
     </div>
   );
 };
+
 export default Dashboard;

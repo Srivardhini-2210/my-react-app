@@ -15,6 +15,14 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
 
+   const handleSubmit = (e) => {
+    e.preventDefault();
+    // Authenticate user here (ex: API call)
+    // If authentication is successful:
+    navigate("/dashboard");
+  };
+
+
   const handleLogin = () => {
     if (!email || !password) {
       alert("Please fill out both fields.");

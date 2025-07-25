@@ -1,7 +1,10 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-// For Firebase Auth logout, import these:
-import { getAuth, signOut } from "firebase/auth"; // If using Firebase
+// For Firebase Auth logout and data fetch
+import { getAuth, signOut } from "firebase/auth";
+import { doc, getDoc } from "firebase/firestore";
+import { db } from "../firebase"; // Assuming this exports db
+
 // React Icons imports
 import { FaSearch, FaBell, FaUser, FaSignOutAlt, FaTimes } from "react-icons/fa";
 
@@ -21,7 +24,6 @@ const mockSuggestions = [
 
 const Header = () => {
   const navigate = useNavigate();
-  // For Firebase:
   const auth = getAuth();
 
   const [searchQuery, setSearchQuery] = useState("");
@@ -31,7 +33,37 @@ const Header = () => {
   const searchRef = useRef(null);
   const inputRef = useRef(null);
 
-  // Debounced search effect
+  // NEW: States for user profile
+  const [userInfo, setUserInfo] = useState(null);
+  const [showProfileDropdown, setShowProfileDropdown] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  // Fetch user info from Firestore on mount
+  useEffect(() => {
+    const fetchUserInfo = async () => {
+      const user = auth.currentUser;
+      if (!user) {
+        setLoading(false);
+        return; // No user logged in
+      }
+
+      try {
+        const userDocRef = doc(db, "users", user.uid);
+        const userDoc = await getDoc(userDocRef);
+        if (userDoc.exists()) {
+          setUserInfo(userDoc.data());
+        }
+      } catch (error) {
+        console.error("Error fetching user info:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUserInfo();
+  }, []);
+
+  // Debounced search effect (unchanged)
   useEffect(() => {
     const timeoutId = setTimeout(() => {
       if (searchQuery.trim()) {
@@ -50,7 +82,7 @@ const Header = () => {
     return () => clearTimeout(timeoutId);
   }, [searchQuery]);
 
-  // Click outside to close suggestions
+  // Click outside to close suggestions (unchanged)
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (searchRef.current && !searchRef.current.contains(event.target)) {
@@ -63,7 +95,7 @@ const Header = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Keyboard navigation
+  // Keyboard navigation (unchanged)
   const handleKeyDown = (e) => {
     if (!showSuggestions) return;
 
@@ -108,16 +140,13 @@ const Header = () => {
   };
 
   const handleLogout = () => {
-    // If using Firebase Auth:
     signOut(auth)
       .then(() => {
         navigate("/login");
       })
       .catch((error) => {
-        // Handle error if needed
         alert("Logout failed");
       });
-
   };
 
   return (
@@ -150,7 +179,7 @@ const Header = () => {
                 <FaTimes />
               </button>
             )}
-            {/* Suggestions Dropdown */}
+            {/* Suggestions Dropdown (unchanged) */}
             {showSuggestions && suggestions.length > 0 && (
               <ul className="absolute z-10 w-full bg-white border border-gray-300 rounded mt-1 shadow-lg max-h-60 overflow-auto">
                 {suggestions.map((suggestion, index) => (
@@ -170,13 +199,46 @@ const Header = () => {
             )}
           </div>
         </div>
-        <div className="flex items-center space-x-3">
+        <div className="flex items-center space-x-3 relative"> {/* Added relative for dropdown positioning */}
           <button className="text-gray-500 hover:text-blue-600 transition">
             <FaBell />
           </button>
-          <button className="text-gray-500 hover:text-blue-600 transition">
+          {/* Updated Profile Button with Dropdown */}
+          <button
+            onClick={() => setShowProfileDropdown(!showProfileDropdown)}
+            className="text-gray-500 hover:text-blue-600 transition relative"
+          >
             <FaUser />
           </button>
+          {/* Profile Dropdown */}
+          {showProfileDropdown && (
+            <div className="absolute top-full right-0 mt-2 bg-white border border-gray-300 rounded shadow-lg p-4 w-64 z-50">
+              {loading ? (
+                <p>Loading profile...</p>
+              ) : userInfo ? (
+                <>
+                  <h3 className="font-bold text-lg mb-2">{userInfo.fullName}</h3>
+                  <p className="text-sm text-gray-600 mb-1">Email: {userInfo.email}</p>
+                  <p className="text-sm text-gray-600 mb-1">DOB: {userInfo.dob}</p>
+                  <p className="text-sm text-gray-600 mb-1">Gender: {userInfo.gender}</p>
+                  <p className="text-sm text-gray-600 mb-1">Education: {userInfo.educationLevel}</p>
+                  {userInfo.domainOfEducation && (
+                    <p className="text-sm text-gray-600 mb-1">Domain: {userInfo.domainOfEducation}</p>
+                  )}
+                  <p className="text-sm text-gray-600 mb-1">Profession: {userInfo.profession}</p>
+                  <p className="text-sm text-gray-600 mb-1">Country: {userInfo.country}</p>
+                  <p className="text-sm text-gray-600 mb-1">Interests:</p>
+                  <ul className="list-disc pl-4 text-sm text-gray-600">
+                    {userInfo.interests.map((interest) => (
+                      <li key={interest}>{interest}</li>
+                    ))}
+                  </ul>
+                </>
+              ) : (
+                <p>No profile data available.</p>
+              )}
+            </div>
+          )}
           <button
             onClick={handleLogout}
             className="bg-red-500 text-black px-3 py-1 rounded hover:bg-red-700 transition flex items-center"
