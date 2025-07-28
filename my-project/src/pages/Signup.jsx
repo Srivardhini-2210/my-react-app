@@ -29,7 +29,7 @@ const interestOptions = [
   { label: "AI/ML", icon: <FaBrain /> },
   { label: "Data Science", icon: <FaChartLine /> },
   { label: "NLP", icon: <FaRobot /> },
-  { label: "Leadership", icon: <FaChalkboardTeacher /> },
+ 
   { label: "Communication", icon: <FaComments /> },
   { label: "Cloud Computing", icon: <FaCloud /> },
   { label: "Cybersecurity", icon: <FaLock /> },
