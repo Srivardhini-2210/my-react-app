@@ -1,0 +1,47 @@
+[
+  {
+    "id": "1",
+    "platform": "NPTEL",
+    "title": "The Joy of Computing using Python",
+    "instructor": "Prof. Sudarshan Iyengar",
+    "duration": "12 weeks",
+    "start_date": "July 22, 2024",
+    "link": "https://onlinecourses.nptel.ac.in/noc24_cs57"
+  },
+  {
+    "id": "2",
+    "platform": "NPTEL",
+    "title": "Affective Computing",
+    "instructor": " Prof. Jainendra Shukla, Prof. Abhinav Dhall",
+    "duration": "12 weeks",
+    "start_date": "July 22, 2024",
+    "link": "https://onlinecourses.nptel.ac.in/noc24_cs12"
+  },
+  {
+    "id": "3",
+    "platform": "NPTEL",
+    "title": "Software Testing",
+    "instructor": " Prof. Rajib Mall  ",
+    "duration": "4 weeks",
+    "start_date": "August 1, 2024",
+    "link": "https://onlinecourses.nptel.ac.in/noc24_cs47"
+  },
+  {
+    "id": "4",
+    "platform": "NPTEL",
+    "title": "Modern Computer Vision",
+    "instructor": "Prof. A.N. Rajagopalan",
+    "duration": "12 weeks",
+    "start_date": "August 5, 2024",
+    "link": "https://onlinecourses.nptel.ac.in/noc24_ee21"
+  },
+  {
+    "id": "5",
+    "platform": "NPTEL",
+    "title": "Great Experiments In Psychology",
+    "instructor": "Prof. Rajlakshmi Guha ",
+    "duration": "4 weeks",
+    "start_date": "September 2, 2024",
+    "link": "https://onlinecourses.nptel.ac.in/noc24_hs14"
+  }
+]

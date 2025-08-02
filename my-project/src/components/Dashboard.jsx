@@ -1,153 +1,307 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { auth } from "../firebase"; // Assuming firebase is configured in ../firebase
-// Removed unnecessary imports: doc, getDoc, db (if not using userInfo)
+import {
+  Clock,
+  Star,
+  Users,
+  DollarSign,
+  Heart,
+  Filter,
+  ArrowUpDown,
+} from "lucide-react";
+import CourseSearch from "./CourseSearch";
 
-// Just use regular object literals and arrays, no `interface`
-const mockCourses = [
-  {
-    id: "1",
-    title: "Complete Web Development Bootcamp",
-    platform: "Udemy",
-    price: "$49.99",
-    duration: "52 hours",
-    rating: 4.6,
-    students: "245k",
-    level: "Beginner",
-    description: "Learn HTML, CSS, JavaScript, Node.js, React, and more in this comprehensive course.",
-    tags: ["Web Development", "JavaScript", "React"]
-  },
-  {
-    id: "2",
-    title: "Machine Learning A-Z",
-    platform: "Coursera",
-    price: "$79.99",
-    duration: "40 hours",
-    rating: 4.8,
-    students: "150k",
-    level: "Intermediate",
-    description: "Hands-on Python & R in Data Science with real examples and exercises.",
-    tags: ["Machine Learning", "Python", "Data Science"]
-  },
-  {
-    id: "3",
-    title: "Digital Marketing Masterclass",
-    platform: "LinkedIn Learning",
-    price: "Free",
-    duration: "30 hours",
-    rating: 4.4,
-    students: "89k",
-    level: "Beginner",
-    description: "Complete guide to digital marketing including SEO, Social Media, and PPC.",
-    tags: ["Digital Marketing", "SEO", "Social Media"]
-  }
+const PLATFORMS = [
+  { name: "NPTEL", from: "from-indigo-600", to: "to-indigo-400", badge: "bg-indigo-700" },
+  { name: "Coursera", from: "from-pink-600", to: "to-rose-400", badge: "bg-rose-600" },
+  { name: "LinkedIn Learning", from: "from-emerald-500", to: "to-lime-400", badge: "bg-emerald-600" },
 ];
 
+function getCardBg(platform) {
+  const p = PLATFORMS.find(x => x.name === platform);
+  return p ? `bg-gradient-to-br ${p.from} ${p.to}` : "bg-gradient-to-br from-gray-200 to-gray-100";
+}
+
+function getBadgeBg(platform) {
+  const p = PLATFORMS.find(x => x.name === platform);
+  return p ? p.badge : "bg-gray-300";
+}
+
 const Dashboard = () => {
-  const [savedCourses, setSavedCourses] = useState([]);
-  // Removed: const [userInfo, setUserInfo] = useState(null); // No longer needed
-  const [loading, setLoading] = useState(true); // Loading state for auth check
-  // Removed: const [showProfile, setShowProfile] = useState(false); // Removed as per request
   const navigate = useNavigate();
 
-  // Simplified useEffect: Only check auth (removed userInfo fetch if not needed)
+  const [allCourses, setAllCourses] = useState([]);
+  const [filteredCourses, setFilteredCourses] = useState([]);
+  const [selectedPlatform, setSelectedPlatform] = useState(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [savedCourses, setSavedCourses] = useState([]);
+  const [compareList, setCompareList] = useState([]);
+  const [showFilter, setShowFilter] = useState(false);
+
   useEffect(() => {
-    const checkAuth = () => {
-      const user = auth.currentUser;
-      if (!user) {
-        // If no user is logged in, redirect to login
-        navigate("/");
-        return;
-      }
-      setLoading(false);
-    };
+    fetch("/all_courses.json")
+      .then(res => res.json())
+      .then(data => {
+        const courses = data.map((course, idx) => ({
+          id: course.id || idx.toString(),
+          rating: course.rating || "N/A",
+          students: course.students || "N/A",
+          price: course.price || "Free",
+          tags: course.tags || [course.platform],
+          ...course,
+        }));
+        setAllCourses(courses);
+        setFilteredCourses(courses);
+      })
+      .catch(() => {
+        setAllCourses([]);
+        setFilteredCourses([]);
+      });
+  }, []);
 
-    checkAuth();
+  // Platform card click handler with navigation for NPTEL and Coursera
+  const onPlatformClick = (platform) => {
+    if (platform === "NPTEL") {
+      navigate("/courses/nptel");  // Redirect to NPTEL courses page
+      return;
+    }
+    if (platform === "Coursera") {
+      navigate("/courses/coursera");  // Redirect to Coursera courses page
+      return;
+    }
+    // For other platforms, filter inline
+    if (selectedPlatform === platform) {
+      setSelectedPlatform(null);
+      setFilteredCourses(allCourses);
+    } else {
+      setSelectedPlatform(platform);
+      setFilteredCourses(allCourses.filter(c => c.platform === platform));
+    }
+    setSearchQuery("");
+  };
 
-    // If you still need userInfo for something (e.g., personalized recommendations), uncomment and adapt:
-    // const fetchUserInfo = async () => {
-    //   try {
-    //     const userDocRef = doc(db, "users", user.uid);
-    //     const userDoc = await getDoc(userDocRef);
-    //     if (userDoc.exists()) {
-    //       setUserInfo(userDoc.data());
-    //     }
-    //   } catch (error) {
-    //     console.error("Error fetching user info:", error);
-    //   } finally {
-    //     setLoading(false);
-    //   }
-    // };
-    // fetchUserInfo();
-  }, [navigate]);
+  // Search bar handler for input changes
+  const onSearchChange = (query) => {
+    setSearchQuery(query);
+    let baseCourses = selectedPlatform ? allCourses.filter(c => c.platform === selectedPlatform) : allCourses;
+    if (query.trim()) {
+      const q = query.toLowerCase();
+      baseCourses = baseCourses.filter(
+        c =>
+          c.title.toLowerCase().includes(q) ||
+          (c.instructor && c.instructor.toLowerCase().includes(q)) ||
+          (c.tags && c.tags.some(tag => tag.toLowerCase().includes(q))) ||
+          (c.platform && c.platform.toLowerCase().includes(q))
+      );
+    }
+    setFilteredCourses(baseCourses);
+  };
 
-  const toggleSaveCourse = (courseId) => {
-    setSavedCourses((prev) =>
-      prev.includes(courseId)
-        ? prev.filter((id) => id !== courseId)
-        : [...prev, courseId]
+  // For when CourseSearch provides filtered list
+  const onSearchResults = (results) => setFilteredCourses(results);
+
+  // Toggle like/save for individual course
+  const toggleSave = (id) => {
+    setSavedCourses(prev =>
+      prev.includes(id) ? prev.filter(cid => cid !== id) : [...prev, id]
     );
   };
 
-  if (loading) {
-    return <div className="text-center py-8">Loading dashboard...</div>;
-  }
+  // Toggle select/deselect course for compare (max 3)
+  const toggleCompare = (id) => {
+    setCompareList(prev => {
+      if (prev.includes(id)) return prev.filter(cid => cid !== id);
+      if (prev.length < 3) return [...prev, id];
+      return [prev[1], prev[2], id]; // rotate oldest out
+    });
+  };
+
+  // Compare button click handler (show alert placeholder)
+  const handleCompareClick = () => {
+    if (compareList.length > 0) {
+      alert(`Comparing courses:\n${compareList.join(", ")}`);
+      // Extend: navigate to compare page or show modal
+    }
+  };
+
+  // Filter button toggle (UI placeholder for filters)
+  const toggleFilter = () => setShowFilter(prev => !prev);
+
+  // Clear platform selection to show all courses
+  const clearPlatformFilter = () => {
+    setSelectedPlatform(null);
+    setFilteredCourses(allCourses);
+    setSearchQuery("");
+  };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8">
-      {/* Removed: Profile Button and Modal */}
-
-      <div className="mb-8">
-        <h2 className="text-3xl font-bold text-gray-900 mb-2">
-          Discover Your Next Skill
-        </h2>
-        <p className="text-gray-500 text-lg">
-          Find and compare courses from top platforms to accelerate your learning journey
-        </p>
+    <div className="min-h-screen bg-gradient-to-b from-slate-100 to-white px-6 py-8">
+      {/* Header */}
+      <div className="max-w-screen-xl mx-auto text-center mb-10">
+        <h1 className="text-3xl font-bold text-gray-900 mb-1">Discover Your Skill</h1>
+        <p className="text-gray-700">Find and compare courses from top platforms</p>
       </div>
-      <div>
-        <h3 className="text-xl font-semibold text-gray-800 mb-4">Featured Courses</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {mockCourses.map((course) => (
-            <div
-              key={course.id}
-              className="bg-white shadow-lg rounded-xl p-6 relative hover:shadow-xl transition-shadow"
-            >
-              <div className="mb-1 flex items-center justify-between">
-                <span className="bg-gray-100 text-gray-700 px-2 py-1 rounded text-xs">
-                  {course.platform}
-                </span>
-                <button
-                  onClick={() => toggleSaveCourse(course.id)}
-                  className="text-gray-400 hover:text-red-600 transition"
-                  aria-label="Save course"
-                >
-                  <svg className={`w-5 h-5 ${savedCourses.includes(course.id) ? "fill-red-500" : ""}`} viewBox="0 0 24 24">
-                    <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 6 4 4 6.5 4c1.74 0 3.41 1.01 4.13 2.44h1.74C14.09 5.01 15.76 4 17.5 4 20 4 22 6 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
-                  </svg>
-                </button>
-              </div>
-              <h4 className="text-lg font-bold mt-2 mb-1">{course.title}</h4>
-              <p className="text-gray-600 mb-2 line-clamp-2">{course.description}</p>
-              <div className="mb-3 flex space-x-2">
-                {course.tags.slice(0, 2).map((tag) => (
-                  <span key={tag} className="border border-gray-300 rounded px-2 py-0.5 text-xs bg-gray-50">
-                    {tag}
-                  </span>
-                ))}
-              </div>
-              <div className="grid grid-cols-2 gap-2 text-sm text-gray-400 mb-3">
-                <span>⏰ {course.duration}</span>
-                <span>⭐ {course.rating}</span>
-                <span>👤 {course.students}</span>
-                <span>💲 {course.price}</span>
-              </div>
-              <button className="w-full bg-blue-600 hover:bg-blue-700 text-black font-semibold py-2 rounded-lg transition">
-                View Details
-              </button>
-            </div>
-          ))}
+
+      {/* Top controls */}
+      <div className="max-w-screen-xl mx-auto flex flex-col md:flex-row gap-4 md:items-center justify-between mb-10">
+        <div className="flex-grow md:max-w-xl">
+          <CourseSearch
+            courses={selectedPlatform ? allCourses.filter(c => c.platform === selectedPlatform) : allCourses}
+            onSearchResults={onSearchResults}
+            onSearchQuery={onSearchChange}
+          />
         </div>
+
+        <div className="flex gap-4">
+          <button
+            onClick={toggleFilter}
+            className={`flex items-center gap-2 px-5 py-2 border border-gray-400 rounded hover:bg-gray-100 cursor-pointer ${showFilter ? "bg-gray-200" : "bg-white"}`}
+          >
+            <Filter size={20} />
+            Filter
+          </button>
+
+          <button
+            onClick={handleCompareClick}
+            disabled={compareList.length === 0}
+            className={`flex items-center gap-2 px-5 py-2 rounded cursor-pointer transition-colors
+              ${compareList.length > 0 ? "bg-blue-600 text-white hover:bg-blue-700" : "bg-gray-300 text-gray-600 cursor-not-allowed"}
+            `}
+          >
+            <ArrowUpDown size={20} />
+            Compare
+            {compareList.length > 0 && (
+              <span className="ml-2 bg-blue-300 text-blue-900 font-bold text-xs rounded-full px-2 py-0.5 select-none">
+                {compareList.length}
+              </span>
+            )}
+          </button>
+        </div>
+      </div>
+
+      {/* Platform Cards */}
+      <div className="max-w-screen-xl mx-auto flex flex-wrap justify-center gap-8 mb-12">
+        {PLATFORMS.map(plat => (
+          <button
+            key={plat.name}
+            onClick={() => onPlatformClick(plat.name)}
+            className={`cursor-pointer rounded-xl w-44 p-6 flex flex-col items-center text-white font-bold shadow-xl transition-transform duration-300 ${
+              selectedPlatform === plat.name ? "scale-105 ring-4 ring-indigo-400" : ""
+            } ${plat.from} ${plat.to} bg-gradient-to-br focus:outline-none`}
+          >
+            <h3 className="text-2xl">{plat.name}</h3>
+            <p className="mt-2 text-sm font-light">Click to view {plat.name} courses</p>
+          </button>
+        ))}
+        {selectedPlatform && (
+          <button
+            onClick={clearPlatformFilter}
+            className="self-center px-5 py-3 rounded bg-gray-200 hover:bg-gray-300 text-gray-800"
+          >
+            Show All
+          </button>
+        )}
+      </div>
+
+      {/* Selected for Comparison */}
+      {compareList.length > 0 && (
+        <div className="max-w-screen-xl mx-auto bg-sky-100 rounded shadow-md p-4 mb-10">
+          <h4 className="font-semibold text-blue-700 mb-2">
+            Selected for Comparison ({compareList.length} of 3)
+          </h4>
+          <div className="flex flex-wrap gap-3">
+            {compareList.map(id => {
+              const course = filteredCourses.find(c => c.id === id);
+              return (
+                <span key={id} className="bg-blue-200 text-blue-900 rounded px-3 py-1 flex items-center gap-2 text-sm">
+                  {course?.title || "Course"}
+                  <button
+                    onClick={() => toggleCompare(id)}
+                    aria-label={`Remove ${course?.title || "Course"} from comparison`}
+                    className="text-red-600 font-bold hover:text-red-800"
+                  >
+                    &times;
+                  </button>
+                </span>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Courses Grid */}
+      <div className="max-w-screen-xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+        {filteredCourses.length === 0 ? (
+          <p className="text-center text-gray-500 py-16">No courses found.</p>
+        ) : (
+          filteredCourses.map(course => (
+            <div key={course.id} className={`${getCardBg(course.platform)} rounded-lg shadow-lg flex flex-col h-full`}>
+              <div className="p-6 flex flex-col gap-3 flex-grow text-white">
+                <div className="flex items-center gap-3">
+                  <span className={`text-xs font-bold px-3 py-1 rounded-full shadow ${getBadgeBg(course.platform)}`}>
+                    {course.platform}
+                  </span>
+                  <h2 className="text-2xl font-semibold drop-shadow">{course.title}</h2>
+                </div>
+                <p>{course.instructor}</p>
+                <p className="mt-auto">
+                  <Clock className="inline mr-1" size={16} />
+                  {course.duration}
+                </p>
+                <p>Start: {course.start_date}</p>
+                <p className="flex gap-4 mt-2 text-sm">
+                  <span className="flex items-center gap-1">
+                    <Star className="text-yellow-400" size={16} />
+                    {course.rating}
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <Users className="text-sky-300" size={16} />
+                    {course.students}
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <DollarSign className="text-green-400" size={16} />
+                    {course.price}
+                  </span>
+                </p>
+              </div>
+              <div className="border-t border-white/20 p-4 flex items-center justify-between bg-white/10 rounded-b-lg">
+                <button
+                  onClick={() => toggleCompare(course.id)}
+                  disabled={!compareList.includes(course.id) && compareList.length >= 3}
+                  className={`px-3 py-1 border rounded text-xs flex items-center gap-2
+                    bg-white/30 backdrop-blur-md transition-colors 
+                    ${compareList.includes(course.id) ? "border-green-400 text-green-400" : "border-gray-200 text-gray-200"}
+                    ${compareList.length >= 3 && !compareList.includes(course.id) ? "opacity-60 cursor-not-allowed" : "hover:bg-white/50"}
+                  `}
+                >
+                  <input
+                    type="checkbox"
+                    checked={compareList.includes(course.id)}
+                    onChange={() => toggleCompare(course.id)}
+                    className="cursor-pointer accent-blue-600"
+                    disabled={compareList.length >= 3 && !compareList.includes(course.id)}
+                  />
+                  Compare
+                </button>
+                <button
+                  onClick={() => toggleSave(course.id)}
+                  aria-label="Toggle like (favorite)"
+                  className={`text-lg transition-colors ${savedCourses.includes(course.id) ? "text-red-500" : "text-white/70"}`}
+                >
+                  <Heart size={24} fill={savedCourses.includes(course.id) ? "#ef4444" : "none"} />
+                </button>
+                <a
+                  href={course.link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-white underline font-semibold hover:text-indigo-300"
+                >
+                  Go to Course
+                </a>
+              </div>
+            </div>
+          ))
+        )}
       </div>
     </div>
   );

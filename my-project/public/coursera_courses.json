@@ -1,0 +1,47 @@
+[
+  {
+    "id": "1",
+    "platform": "Coursera",
+    "title": "Python for Everybody",
+    "instructor": "Dr. Charles Severance",
+    "duration": "8 weeks",
+    "start_date": "Open Enrollment",
+    "link": "https://www.coursera.org/specializations/python"
+  },
+  {
+    "id": "2",
+    "platform": "Coursera",
+    "title": "Machine Learning",
+    "instructor": "Andrew Ng",
+    "duration": "11 weeks",
+    "start_date": "Open Enrollment",
+    "link": "https://www.coursera.org/learn/machine-learning"
+  },
+  {
+    "id": "3",
+    "platform": "Coursera",
+    "title": "Google IT Support",
+    "instructor": "Google Career Certificates",
+    "duration": "24 weeks",
+    "start_date": "Open Enrollment",
+    "link": "https://www.coursera.org/professional-certificates/google-it-support"
+  },
+  {
+    "id": "4",
+    "platform": "Coursera",
+    "title": "Deep Learning Specialization",
+    "instructor": "Andrew Ng",
+    "duration": "16 weeks",
+    "start_date": "Open Enrollment",
+    "link": "https://www.coursera.org/specializations/deep-learning"
+  },
+  {
+    "id": "5",
+    "platform": "Coursera",
+    "title": "Data Science Specialization",
+    "instructor": "Johns Hopkins University",
+    "duration": "44 weeks",
+    "start_date": "Open Enrollment",
+    "link": "https://www.coursera.org/specializations/jhu-data-science"
+  }
+]
