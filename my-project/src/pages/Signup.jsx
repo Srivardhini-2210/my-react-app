@@ -20,6 +20,25 @@ import {
   FaComments,
   FaProjectDiagram,
   FaChartLine,
+  FaMagic,            // Generative Models
+  FaChartBar,         // Normal Distribution
+  FaChartPie,         // Sales Forecasting
+  FaUserSecret,       // Digital Privacy
+  FaUserMd,           // Neurology
+  FaShoppingCart,     // Sales
+  FaChess,            // Competitive Strategy
+  FaUserCog,          // Consumer Psychology
+  FaHeart,            // Empathy
+  FaCogs,             // Reservoir Modeling
+  FaSuperscript,      // Mathematical Modeling
+  FaUsers,            // Team Organization
+  FaHandshake,        // Unions
+  FaLightbulb,        // Lighting Design
+  FaBook,             // Reading
+  FaBalanceScale,     // Public Private Partnerships
+  FaChartArea,        // Uniform Distribution
+  FaPoll,             // Regression Testing
+  FaLeaf,             // Plant Ecology
 } from "react-icons/fa";
 
 const interestOptions = [
@@ -34,8 +53,32 @@ const interestOptions = [
   { label: "Cloud Computing", icon: <FaCloud /> },
   { label: "Cybersecurity", icon: <FaLock /> },
   { label: "Project Management", icon: <FaProjectDiagram /> },
-  { label: "Business", icon: <FaBriefcase /> },
+  { label: "Business", icon: <FaBriefcase /> }, // New domains from the image
+  { label: "Generative Models", icon: <FaMagic /> },
+  { label: "Normal Distribution", icon: <FaChartBar /> },
+  { label: "Sales Forecasting", icon: <FaChartPie /> },
+  { label: "Digital Privacy", icon: <FaUserSecret /> },
+  { label: "Neurology", icon: <FaUserMd /> },
+  { label: "Sales", icon: <FaShoppingCart /> },
+  { label: "Competitive Strategy", icon: <FaChess /> },
+  { label: "Consumer Psychology", icon: <FaUserCog /> },
+  { label: "Empathy", icon: <FaHeart /> },
+  { label: "Reservoir Modeling", icon: <FaCogs /> },
+  { label: "Mathematical Modeling", icon: <FaSuperscript /> },
+  { label: "Team Organization", icon: <FaUsers /> },
+  { label: "Unions", icon: <FaHandshake /> },
+  { label: "Predictive Modelling", icon: <FaProjectDiagram /> },
+  { label: "Lighting Design", icon: <FaLightbulb /> },
+  { label: "Reading", icon: <FaBook /> },
+  { label: "Public Private Partnerships", icon: <FaBalanceScale /> },
+  { label: "Uniform Distribution", icon: <FaChartArea /> },
+  { label: "Regression Testing", icon: <FaPoll /> },
+  { label: "Plant Ecology", icon: <FaLeaf /> },
 ];
+
+
+
+
 
 const isValidEmail = (email) => {
   // Simple email regex pattern

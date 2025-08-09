@@ -1,4 +1,3 @@
-// src/components/Header.jsx
 import React, { useState, useEffect, useRef, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import { getAuth, signOut } from "firebase/auth";
@@ -31,8 +30,6 @@ const Header = () => {
   const navigate = useNavigate();
   const auth = getAuth();
 
-  // Removed search-related states and refs
-
   // Profile states
   const [userInfo, setUserInfo] = useState(null);
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
@@ -53,7 +50,6 @@ const Header = () => {
         setLoading(false);
         return;
       }
-
       try {
         const userDocRef = doc(db, "users", user.uid);
         const userDoc = await getDoc(userDocRef);
@@ -69,24 +65,21 @@ const Header = () => {
         setLoading(false);
       }
     };
-
     fetchUserInfo();
   }, [auth]);
 
-  // Click outside handlers for profile and wishlist dropdowns
+  // Click outside handlers
   useEffect(() => {
     const handleClickOutsideProfile = (event) => {
       if (profileRef.current && !profileRef.current.contains(event.target)) {
         setShowProfileDropdown(false);
       }
     };
-
     const handleClickOutsideWishlist = (event) => {
       if (wishlistRef.current && !wishlistRef.current.contains(event.target)) {
         setShowWishlistDropdown(false);
       }
     };
-
     document.addEventListener('mousedown', handleClickOutsideProfile);
     document.addEventListener('mousedown', handleClickOutsideWishlist);
     return () => {
@@ -106,25 +99,27 @@ const Header = () => {
   };
 
   return (
-    <header className="border-b bg-white sticky top-0 z-50 shadow-sm">
-      <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+    <header className="sticky top-0 z-50 bg-white shadow shadow-gray-200 border-b">
+      <div className="max-w-7xl mx-auto px-4 py-2 flex items-center justify-between">
         <div className="flex items-center space-x-2">
-          <img src="/logo.png" alt="Logo" className="h-15 w-15 object-contain" />
-          <h1 className="text-xl font-bold text-gray-900">CourseXpert</h1>
+          {/* Reduced height and width for logo */}
+          <img src="/logo.png" alt="Logo" className="h-10 w-10 object-contain" />
+          <h1 className="text-lg font-bold text-gray-900">CourseXpert</h1>
         </div>
 
-        {/* Removed search bar container */}
-
+        {/* Right side icons and dropdowns */}
         <div className="flex items-center space-x-3 relative">
           <button className="text-gray-500 hover:text-blue-600 transition">
             <FaBell />
           </button>
 
           {/* Wishlist Dropdown */}
-          <div ref={wishlistRef}>
+          <div ref={wishlistRef} className="relative">
             <button
               onClick={() => setShowWishlistDropdown(!showWishlistDropdown)}
               className="text-gray-500 hover:text-red-600 transition relative"
+              aria-haspopup="true"
+              aria-expanded={showWishlistDropdown}
             >
               <FaHeart className="text-xl" />
               {mockWishlist.length > 0 && (
@@ -159,10 +154,12 @@ const Header = () => {
           </div>
 
           {/* Profile Dropdown */}
-          <div ref={profileRef}>
+          <div ref={profileRef} className="relative">
             <button
               onClick={() => setShowProfileDropdown(!showProfileDropdown)}
               className="text-gray-500 hover:text-blue-600 transition relative"
+              aria-haspopup="true"
+              aria-expanded={showProfileDropdown}
             >
               <FaUser />
             </button>
@@ -184,6 +181,7 @@ const Header = () => {
                         </p>
                       </div>
                     </div>
+                    {/* Additional user info */}
                     <div className="space-y-3 mb-4 text-sm">
                       <div className="flex items-center justify-between">
                         <span className="text-gray-500 flex items-center gap-2">

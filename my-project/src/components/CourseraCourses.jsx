@@ -79,20 +79,7 @@ const CourseraCourses = () => {
         </div>
       </div>
 
-      {/* Compare Button */}
-      <div className="max-w-screen-xl mx-auto flex justify-end mb-6">
-        <button
-          disabled={compareList.length === 0}
-          onClick={handleCompareClick}
-          className={`px-4 py-2 rounded ${
-            compareList.length > 0
-              ? "bg-rose-600 text-white hover:bg-rose-700"
-              : "bg-gray-300 text-gray-600 cursor-not-allowed"
-          }`}
-        >
-          Compare ({compareList.length})
-        </button>
-      </div>
+
 
       {/* Selected for Comparison */}
       {compareList.length > 0 && (
@@ -211,7 +198,7 @@ const CourseraCourses = () => {
                   href={course.link}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="mt-auto bg-rose-600 text-white py-2 rounded font-semibold hover:bg-rose-700 transition text-center"
+                  className="mt-auto bg-rose-300 text-white py-2 rounded font-semibold hover:bg-rose-700 transition text-center"
                 >
                   Go to Course
                 </a>
