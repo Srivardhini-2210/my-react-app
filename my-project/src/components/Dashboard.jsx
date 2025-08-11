@@ -1,386 +1,200 @@
-import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import {
-  Clock,
-  Star,
-  Users,
-  DollarSign,
-  Heart,
-  Filter,
-  ArrowUpDown,
-} from "lucide-react";
-import CourseSearch from "./CourseSearch";
-import CourseFilters from "./CourseFilters";
-//import "./App.css"; // Your custom CSS (buttons) if any
-
-const PLATFORMS = [
-  { name: "NPTEL" },
-  { name: "Coursera" },
-  { name: "Udemy" },
-];
+import React from 'react';
+import { Link } from 'react-router-dom';
+import { Search, BookMarked, Star, Users, TrendingUp, Award } from 'lucide-react';
+import { Button } from '../components/ui/button';
+import { Card, CardContent, CardFooter } from '../components/ui/card';
+import { Badge } from '../components/ui/badge';
+import { mockCourses, mockCategories, mockProviders } from '../data/mock';
 
 const Dashboard = () => {
-  const navigate = useNavigate();
-  const [allCourses, setAllCourses] = useState([]);
-  const [filteredCourses, setFilteredCourses] = useState([]);
-  const [selectedPlatform, setSelectedPlatform] = useState(null);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [savedCourses, setSavedCourses] = useState([]);
-  const [compareList, setCompareList] = useState([]);
-  const [showFilter, setShowFilter] = useState(false);
-  const [activeFilters, setActiveFilters] = useState({
-    platforms: [],
-    levels: [],
-    priceRanges: [],
-    durations: [],
-    ratings: [],
-    formats: [],
-  });
-
-  useEffect(() => {
-    fetch("/all_courses.json")
-      .then(res => res.json())
-      .then(data => {
-        const courses = data.map((course, idx) => ({
-          id: course.id || idx.toString(),
-          rating: course.rating || 0,
-          students: course.students || "N/A",
-          price: course.price || "Free",
-          tags: course.tags || [course.platform],
-          ...course,
-        }));
-        setAllCourses(courses);
-        setFilteredCourses(courses);
-      })
-      .catch(() => {
-        setAllCourses([]);
-        setFilteredCourses([]);
-      });
-  }, []);
-
-  const onPlatformClick = (platform) => {
-    if (platform === "NPTEL") {
-      navigate("/courses/nptel");
-      return;
-    }
-    if (platform === "Coursera") {
-      navigate("/courses/coursera");
-      return;
-    }
-    if (selectedPlatform === platform) {
-      setSelectedPlatform(null);
-      setFilteredCourses(allCourses);
-    } else {
-      setSelectedPlatform(platform);
-      setFilteredCourses(allCourses.filter(c => c.platform === platform));
-    }
-    setSearchQuery("");
-  };
-
-  const applyFilters = (courses, filters, query) => {
-    return courses.filter(course => {
-      if (filters.platforms.length && !filters.platforms.includes(course.platform)) return false;
-      if (filters.levels.length && !filters.levels.includes(course.level)) return false;
-      if (filters.priceRanges.length) {
-        let matches = false;
-        for (const pr of filters.priceRanges) {
-          if (pr === "Free" && course.price === "Free") matches = true;
-          else if (pr === "<$20") {
-            const price = parseFloat(course.price.replace('$', '')) || 0;
-            if (price < 20) matches = true;
-          } else if (pr === "$20-$50") {
-            const price = parseFloat(course.price.replace('$', '')) || 0;
-            if (price >= 20 && price <= 50) matches = true;
-          } else if (pr === "$50-$100") {
-            const price = parseFloat(course.price.replace('$', '')) || 0;
-            if (price > 50 && price <= 100) matches = true;
-          } else if (pr === "$100+") {
-            const price = parseFloat(course.price.replace('$', '')) || 0;
-            if (price > 100) matches = true;
-          }
-        }
-        if (!matches) return false;
-      }
-      if (filters.durations.length) {
-        let matches = false;
-        const durationHours = parseInt(course.duration) || 0;
-        for (const dr of filters.durations) {
-          if (dr === "< 5 hours" && durationHours < 5) matches = true;
-          else if (dr === "5-15 hours" && durationHours >= 5 && durationHours <= 15) matches = true;
-          else if (dr === "15-30 hours" && durationHours > 15 && durationHours <= 30) matches = true;
-          else if (dr === "30+ hours" && durationHours > 30) matches = true;
-        }
-        if (!matches) return false;
-      }
-      if (filters.ratings.length) {
-        let matches = false;
-        for (const rt of filters.ratings) {
-          if (rt === "4+ stars" && course.rating >= 4) matches = true;
-          else if (rt === "3+ stars" && course.rating >= 3) matches = true;
-          else if (rt === "2+ stars" && course.rating >= 2) matches = true;
-        }
-        if (!matches) return false;
-      }
-      if (query) {
-        const q = query.toLowerCase();
-        if (!(
-          course.title?.toLowerCase().includes(q) ||
-          (course.instructor && course.instructor.toLowerCase().includes(q)) ||
-          (course.tags && course.tags.some(tag => tag.toLowerCase().includes(q))) ||
-          (course.platform && course.platform.toLowerCase().includes(q))
-        )) {
-          return false;
-        }
-      }
-      return true;
-    });
-  };
-
-  const onSearchChange = (query) => {
-    setSearchQuery(query);
-    const filtered = applyFilters(allCourses, activeFilters, query);
-    setFilteredCourses(filtered);
-  };
-
-  const onFilterChange = (filters) => {
-    setActiveFilters(filters);
-    const filtered = applyFilters(allCourses, filters, searchQuery);
-    setFilteredCourses(filtered);
-  };
-
-  const clearFilters = () => {
-    const emptyFilters = {
-      platforms: [],
-      levels: [],
-      priceRanges: [],
-      durations: [],
-      ratings: [],
-      formats: []
-    };
-    setActiveFilters(emptyFilters);
-    setFilteredCourses(applyFilters(allCourses, emptyFilters, searchQuery));
-  };
-
-  const toggleSave = (id) => {
-    setSavedCourses(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
-  };
-
-  const toggleCompare = (id) => {
-    setCompareList(prev => {
-      if (prev.includes(id)) return prev.filter(x => x !== id);
-      if (prev.length < 3) return [...prev, id];
-      return [prev[1], prev[2], id];
-    });
-  };
-
-  const handleCompareClick = () => {
-    if (compareList.length) {
-      alert(`Comparing courses: ${compareList.join(", ")}`);
-    }
-  };
+  const featuredCourses = mockCourses.slice(0, 3);
+  const popularCategories = mockCategories.slice(0, 8);
 
   return (
-    <div className="min-h-screen px-6 py-8 bg-gradient-to-br from-purple-500 via-purple-300 to-fuchsia-200">
-      {/* Header */}
-      <div className="max-w-screen-xl mx-auto text-center mb-10">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Discover Your Skill</h1>
-        <p className="text-gray-700">Find and compare courses from top platforms</p>
-      </div>
+    <div className="min-h-screen">
+      {/* Hero Section */}
+      <section className="bg-gradient-to-r from-blue-50 to-indigo-100 py-20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <h1 className="text-4xl md:text-6xl font-bold text-gray-900 mb-6">
+            Discover Your Next
+            <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+              {' '}Learning Adventure
+            </span>
+          </h1>
+          <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
+            Find and compare courses from NPTEL, Coursera, and Udemy. 
+            Get reviews, ratings, and personalized recommendations all in one place.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Link to="/courses">
+     <Button
+  size="lg"
+  className="bg-blue-200 hover:bg-blue-300 px-8 py-3 text-black flex items-center"
+>
+  <Search className="w-5 h-5 mr-2 text-black" />
+  <span className="text-black">Explore Courses</span>
+</Button>
 
-      {/* Centered Search Bar */}
-      <div className="max-w-screen-xl mx-auto flex flex-col items-center justify-center mb-6">
-        <div className="w-full sm:w-2/3 md:w-1/2 max-w-xl">
-          <CourseSearch
-            courses={allCourses}
-            onSearchResults={onSearchChange}
-            onSearchQuery={setSearchQuery}
-          />
-        </div>
-      </div>
 
-      {/* Controls */}
-      <div className="max-w-screen-xl mx-auto flex flex-col md:flex-row gap-4 md:items-center justify-center mb-10">
-        <div className="flex gap-3 justify-center">
-          <button
-            onClick={() => setShowFilter(true)}
-            className={`filter-btn${showFilter ? " active" : ""}`}
-          >
-            <Filter size={20} />
-            <span>Filter</span>
-          </button>
-          <button
-            onClick={handleCompareClick}
-            disabled={compareList.length === 0}
-            className={`compare-btn${compareList.length ? "" : " disabled"}`}
-          >
-            <ArrowUpDown size={20} />
-            Compare
-            {compareList.length > 0 && (
-              <span style={{
-                backgroundColor: "#fbcfe8", color: "#831843",
-                padding: "0.125rem 0.5rem", borderRadius: "9999px", fontSize: "0.75rem", marginLeft: "0.5rem"
-              }}>
-                {compareList.length}
-              </span>
-            )}
-          </button>
-        </div>
-      </div>
 
-      {/* Filter modal */}
-      {showFilter && (
-        <CourseFilters
-          filters={activeFilters}
-          onFiltersChange={onFilterChange}
-          onClearFilters={clearFilters}
-          isVisible={showFilter}
-          onClose={() => setShowFilter(false)}
-        />
-      )}
-
-      {/* Header */}
-      <div className="max-w-screen-xl mx-auto text-center mb-10">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Top platforms Available..</h1>
-        
-      </div>
-
-      {/* Platform Cards */}
-      <div className="max-w-screen-xl mx-auto flex flex-wrap justify-center gap-8 mb-12">
-        {PLATFORMS.map(plat => (
-          <button
-            key={plat.name}
-            onClick={() => onPlatformClick(plat.name)}
-            className={`cursor-pointer rounded-xl w-44 p-6 flex flex-col items-center text-white font-bold shadow-xl transition-transform duration-300 ${
-              plat.name === "NPTEL"
-                ? "bg-gradient-to-br from-indigo-600 to-indigo-400"
-                : plat.name === "Coursera"
-                ? "bg-gradient-to-br from-pink-600 to-rose-400"
-                : plat.name === "Udemy"
-                ? "bg-gradient-to-br from-emerald-500 to-lime-400"
-                : "bg-gradient-to-br from-gray-200 to-gray-100 text-gray-800"
-            } ${
-              selectedPlatform === plat.name ? "scale-105 ring-4 ring-indigo-400" : ""
-            }`}
-          >
-            {plat.name === "NPTEL" && (
-              <img
-                src="/nptel.png"
-                alt="NPTEL logo"
-                className="h-15 w-auto mb-2 bg-opacity-80 p-1"
-              />
-            )}
-            {plat.name === "Coursera" && (
-              <img
-                src="/coursera.png"
-                alt="Coursera logo"
-                className="h-15 w-auto mb-2 bg-opacity-80 p-1"
-              />
-            )}
-            {plat.name === "Udemy" && (
-              <img
-                src="/udemy.png"
-                alt="Udemy logo"
-                className="h-15 w-auto mb-2 bg-opacity-80 p-1"
-              />
-            )}
-            <h3 className="text-2xl">{plat.name}</h3>
-            <p className="mt-2 text-sm font-light">Click to view {plat.name} courses</p>
-          </button>
-        ))}
-        {selectedPlatform && (
-          <button onClick={() => {
-            setSelectedPlatform(null);
-            setFilteredCourses(allCourses);
-            setSearchQuery('');
-          }} className="self-center px-5 py-3 rounded bg-gray-200 hover:bg-gray-300 text-gray-800">
-            Show All
-          </button>
-        )}
-      </div>
-
-      {/* Selected for comparison */}
-      {compareList.length > 0 && (
-        <div className="max-w-screen-xl mx-auto bg-sky-100 rounded shadow-md p-4 mb-10">
-          <h4 className="font-semibold text-blue-700 mb-2">Selected for Comparison ({compareList.length} of 3)</h4>
-          <div className="flex flex-wrap gap-3">
-            {compareList.map(id => {
-              const course = filteredCourses.find(c => c.id === id);
-              return (
-                <span key={id} className="bg-blue-200 text-blue-900 rounded px-3 py-1 flex items-center gap-2 text-sm">
-                  {course?.title || "Course"}
-                  <button onClick={() => toggleCompare(id)} aria-label={`Remove ${course?.title || "Course"} from comparison`} className="text-red-600 font-bold hover:text-red-800">×</button>
-                </span>
-              );
-            })}
+            </Link>
+            <Link to="/signup">
+              <Button size="lg" variant="outline" className="border-blue-600 text-blue-600 hover:bg-blue-50 px-8 py-3">
+                Get Started
+              </Button>
+            </Link>
           </div>
         </div>
-      )}
+      </section>
 
-      {/* Courses Grid */}
-      <div className="max-w-screen-xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-        {filteredCourses.length === 0 ? (
-          <p className="text-center text-gray-500 py-16">No courses found.</p>
-        ) : filteredCourses.map(course => (
-          <div
-            key={course.id}
-            className={`
-              rounded-lg shadow-lg flex flex-col h-full text-white
-              ${
-                course.platform === "NPTEL"
-                  ? "bg-gradient-to-br from-indigo-600 to-indigo-400"
-                  : course.platform === "Coursera"
-                  ? "bg-gradient-to-br from-pink-600 to-rose-400"
-                  : course.platform === "Udemy"
-                  ? "bg-gradient-to-br from-emerald-500 to-lime-400"
-                  : "bg-gradient-to-br from-gray-200 to-gray-100 text-gray-800"
-              }
-            `}
-          >
-            <div className="p-6 flex flex-col gap-3 flex-grow">
-              <div className="flex items-center gap-3">
-                {course.platform === "Coursera" && (
-                  <img src="/coursera.png" alt="Coursera logo" className="h-8 w-auto rounded" />
-                )}
-                {course.platform === "NPTEL" && (
-                  <img src="/nptel.png" alt="NPTEL logo" className="h-8 w-auto rounded" />
-                )}
-                {course.platform === "Udemy" && (
-                  <img src="/udemy.png" alt="Udemy logo" className="h-8 w-auto rounded" />
-                )}
-                <span className="text-xs font-bold px-3 py-1 rounded-full shadow bg-black bg-opacity-20">
-                  {course.platform}
-                </span>
+      {/* Stats Section */}
+      <section className="py-16 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
+            {[
+              { number: '10,000+', label: 'Courses Available', color: 'text-blue-600' },
+              { number: '500K+', label: 'Student Reviews', color: 'text-purple-600' },
+              { number: '95%', label: 'Satisfaction Rate', color: 'text-green-600' },
+              { number: '24/7', label: 'Course Access', color: 'text-orange-600' }
+            ].map((stat, i) => (
+              <div key={i} className="space-y-2">
+                <div className={`text-3xl font-bold ${stat.color}`}>{stat.number}</div>
+                <div className="text-gray-600">{stat.label}</div>
               </div>
-              <p>{course.instructor}</p>
-              <p className="mt-auto flex gap-3 text-sm">
-                <span className="flex items-center gap-1"><Clock size={14} />{course.duration}</span>
-                <span className="flex items-center gap-1"><Star size={14} />{course.rating}</span>
-                <span className="flex items-center gap-1"><Users size={14} />{course.students}</span>
-                <span className="flex items-center gap-1"><DollarSign size={14} />{course.price}</span>
-              </p>
-              <p>Start: {course.start_date}</p>
-            </div>
-            <div className="border-t border-white/20 p-4 flex items-center justify-between bg-white/10 rounded-b-lg">
-              <button
-                onClick={() => toggleCompare(course.id)}
-                disabled={!compareList.includes(course.id) && compareList.length >= 3}
-                className={`px-3 py-1 border rounded text-xs flex items-center gap-2 backdrop-blur-md transition-colors
-                  ${compareList.includes(course.id) ? "border-green-400 text-green-400" : "border-gray-200 text-gray-200"}
-                  ${compareList.length >= 3 && !compareList.includes(course.id) ? "opacity-60 cursor-not-allowed" : "hover:bg-white/50"}`}
-              >
-                <input type="checkbox" className="accent-green-400" checked={compareList.includes(course.id)} onChange={() => toggleCompare(course.id)} disabled={compareList.length >= 3 && !compareList.includes(course.id)} />
-                Compare
-              </button>
-              <button onClick={() => toggleSave(course.id)} aria-label="Toggle favorite" className={`transition-colors ${savedCourses.includes(course.id) ? "text-red-500" : "text-white/80"}`}>
-                <Heart size={24} fill={savedCourses.includes(course.id) ? "#ef4444" : "none"} />
-              </button>
-              <a href={course.link} target="_blank" rel="noopener noreferrer" className="text-white underline font-semibold">
-                Go to Course
-              </a>
-            </div>
+            ))}
           </div>
-        ))}
-      </div>
+        </div>
+      </section>
+
+      {/* Featured Courses */}
+      <section className="py-16 bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold text-gray-900 mb-4">Featured Courses</h2>
+            <p className="text-lg text-gray-600">Hand-picked courses from top platforms</p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {featuredCourses.map((course) => (
+              <Card key={course.id} className="group hover:shadow-lg transition-all duration-300 flex flex-col">
+                <div className="relative overflow-hidden rounded-t-lg">
+                  <img 
+                    src={course.thumbnail} 
+                    alt={course.title}
+                    className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
+                  />
+                  <Badge className="absolute top-3 right-3 bg-white text-gray-800">
+                    {course.provider}
+                  </Badge>
+                </div>
+                <CardContent className="p-6 flex-grow">
+                  <h3 className="font-bold text-lg mb-2 line-clamp-2">{course.title}</h3>
+                  <p className="text-gray-600 text-sm mb-3">{course.instructor}</p>
+                  <div className="flex items-center gap-4 text-sm text-gray-500 mb-4">
+                    <div className="flex items-center">
+                      <Star className="w-4 h-4 text-yellow-500 fill-current mr-1" />
+                      <span>{course.rating}</span>
+                      <span className="ml-1">({course.reviewCount})</span>
+                    </div>
+                    <div className="flex items-center">
+                      <Users className="w-4 h-4 mr-1" />
+                      <span>{course.duration}</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <Badge variant="outline">{course.level}</Badge>
+                    <span className="font-semibold text-blue-600">{course.price}</span>
+                  </div>
+                </CardContent>
+                <CardFooter className="p-6 pt-0">
+                  <Link to={`/course/${course.id}`} className="w-full">
+         <Button className="w-full bg-blue-600 hover:bg-blue-700">
+  <span className="text-white">View Details</span>
+</Button>
+
+
+
+                  </Link>
+                </CardFooter>
+              </Card>
+            ))}
+          </div>
+          <div className="text-center mt-12">
+            <Link to="/courses">
+              <Button variant="outline" size="lg" className="border-blue-600 text-blue-600 hover:bg-blue-50">
+                View All Courses
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* Popular Categories */}
+      <section className="py-16 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold text-gray-900 mb-4">Popular Categories</h2>
+            <p className="text-lg text-gray-600">Explore courses by subject</p>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+            {popularCategories.map((category) => (
+              <Link key={category.id} to={`/courses?category=${category.name}`}>
+                <Card className="p-6 text-center hover:shadow-md transition-shadow cursor-pointer group">
+                  <div className="mb-4">
+                    <div className="w-12 h-12 bg-gradient-to-r from-blue-100 to-purple-100 rounded-lg mx-auto flex items-center justify-center group-hover:from-blue-200 group-hover:to-purple-200 transition-colors">
+                      <TrendingUp className="w-6 h-6 text-blue-600" />
+                    </div>
+                  </div>
+                  <h3 className="font-semibold text-gray-900 mb-2">{category.name}</h3>
+                  <p className="text-sm text-gray-500">{category.count} courses</p>
+                </Card>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Platform Partners */}
+      <section className="py-16 bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold text-gray-900 mb-4">Platform Partners</h2>
+            <p className="text-lg text-gray-600">Courses from trusted educational platforms</p>
+          </div>
+          <div className="flex justify-center items-center space-x-12 opacity-60">
+            {mockProviders.map((provider) => (
+              <div key={provider.id} className="flex items-center">
+                <img 
+                  src={provider.logo} 
+                  alt={provider.name}
+                  className="h-12 hover:opacity-100 transition-opacity"
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* CTA Section */}
+      <section className="py-20 bg-gradient-to-r from-blue-600 to-purple-600">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <Award className="w-16 h-16 text-white mx-auto mb-6" />
+          <h2 className="text-3xl md:text-4xl font-bold text-white mb-6">
+            Ready to Start Learning?
+          </h2>
+          <p className="text-xl text-blue-100 mb-8 max-w-2xl mx-auto">
+            Join thousands of learners in CourseXpert to find your perfect course
+          </p>
+          <Link to="/signup">
+           <Button
+  size="lg"
+  className="bg-white text-blue-600 hover:bg-gray-100 px-8 py-3 font-semibold"
+>
+  <span className="text-blue-600">Create an Account</span>
+</Button>
+
+          </Link>
+        </div>
+      </section>
     </div>
   );
 };

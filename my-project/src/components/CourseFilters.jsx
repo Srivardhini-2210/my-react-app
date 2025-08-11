@@ -1,11 +1,9 @@
 import React, { useState, useEffect } from "react";
 
-const platformOptions = ["Coursera", "Udemy","NPTEL", "edX", "All Platforms"];
+const platformOptions = ["Coursera", "Udemy", "NPTEL", "edX", "All Platforms"];
 const levelOptions = ["Beginner", "Intermediate", "Advanced", "All Levels"];
-const priceOptions = ["Free", "<$20", "$20-$50", "$50-$100", "$100+"];
 const durationOptions = ["< 5 hours", "5-15 hours", "15-30 hours", "30+ hours"];
 const ratingOptions = ["4+ stars", "3+ stars", "2+ stars"];
-const formatOptions = [ "Hands-on Labs", "Quizzes & Assignments", "Certificate Available"];
 
 const CourseFilters = ({
   filters,
@@ -18,10 +16,8 @@ const CourseFilters = ({
   const [localFilters, setLocalFilters] = useState({
     platforms: [],
     levels: [],
-    priceRanges: [],
     durations: [],
-    ratings: [],
-    formats: [],
+    ratings: []
   });
 
   useEffect(() => {
@@ -56,10 +52,8 @@ const CourseFilters = ({
     const empty = {
       platforms: [],
       levels: [],
-      priceRanges: [],
       durations: [],
-      ratings: [],
-      formats: []
+      ratings: []
     };
     setLocalFilters(empty);
     onClearFilters();
@@ -80,8 +74,12 @@ const CourseFilters = ({
 
         {getActiveCount() > 0 && (
           <div className="flex justify-between mb-4">
-            <span className="text-sm text-gray-700">{getActiveCount()} filter{getActiveCount() !== 1 ? "s" : ""} selected</span>
-            <button className="text-sm text-blue-600" onClick={clearFilters}>Clear all</button>
+            <span className="text-sm text-gray-700">
+              {getActiveCount()} filter{getActiveCount() !== 1 ? "s" : ""} selected
+            </span>
+            <button className="text-sm text-blue-600" onClick={clearFilters}>
+              Clear all
+            </button>
           </div>
         )}
 
@@ -89,10 +87,8 @@ const CourseFilters = ({
         {[
           ["Platform", "platforms", platformOptions],
           ["Difficulty Level", "levels", levelOptions],
-          ["Price Range", "priceRanges", priceOptions],
           ["Duration", "durations", durationOptions],
-          ["Rating", "ratings", ratingOptions],
-          ["Course Format", "formats", formatOptions]
+          ["Rating", "ratings", ratingOptions]
         ].map(([label, key, options]) => (
           <section className="mb-5" key={key}>
             <p className="font-medium mb-2">{label}</p>
@@ -111,8 +107,18 @@ const CourseFilters = ({
         ))}
 
         <div className="flex justify-between mt-8">
-          <button onClick={clearFilters} className="px-4 py-2 border rounded hover:bg-gray-100">Clear</button>
-          <button onClick={applyFilters} className="px-4 py-2 bg-blue-600 text-black rounded hover:bg-blue-700">Apply</button>
+          <button
+            onClick={clearFilters}
+            className="px-4 py-2 border rounded hover:bg-gray-100"
+          >
+            Clear
+          </button>
+          <button
+            onClick={applyFilters}
+            className="px-4 py-2 bg-blue-600 text-black rounded hover:bg-blue-700"
+          >
+            Apply
+          </button>
         </div>
       </div>
       {/* click-outside closes */}
