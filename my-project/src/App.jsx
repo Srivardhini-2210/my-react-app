@@ -6,8 +6,6 @@ import Dashboard from "./components/Dashboard";
 import { SavedCoursesProvider } from './context/SavedCoursesContext';
 import { AuthProvider } from './context/AuthContext'; // import auth provider
 import PrivateRoute from './components/PrivateRoute'; // import private route
-import NptelCourses from "./components/NptelCourses"; 
-import CourseraCourses from "./components/CourseraCourses";
 
 function App() {
   return (
@@ -17,25 +15,8 @@ function App() {
           <Routes>
             <Route path="/" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
-<Route
-  path="/courses/nptel"
-  element={
-    <PrivateRoute>
-      <div className="flex flex-col min-h-screen w-full">
-        <Header />
-        <NptelCourses />
-      </div>
-    </PrivateRoute>
-  }
-/>
-<Route 
-  path="/courses/coursera"
-  element={
-    <PrivateRoute>
-      <CourseraCourses />
-    </PrivateRoute>
-  }
-/>
+
+
             {/* Protect dashboard route */}
             
             <Route 
@@ -49,7 +30,10 @@ function App() {
                 </PrivateRoute>
               } 
             />
+         
+
           </Routes>
+          
         </BrowserRouter>
       </SavedCoursesProvider>
     </AuthProvider>

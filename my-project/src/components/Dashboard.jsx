@@ -1,10 +1,13 @@
+// src/components/Dashboard.jsx
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Search, BookMarked, Star, Users, TrendingUp, Award } from 'lucide-react';
-import { Button } from '../components/ui/button';
+import { Search, Star, Users, Award } from 'lucide-react';
+import { Button } from './ui/Button';
 import { Card, CardContent, CardFooter } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { mockCourses, mockCategories, mockProviders } from '../data/mock';
+import SearchBar from "./SearchBar";
+import PopularSubjects from "./PopularSubjects";
 
 const Dashboard = () => {
   const featuredCourses = mockCourses.slice(0, 3);
@@ -25,22 +28,20 @@ const Dashboard = () => {
             Find and compare courses from NPTEL, Coursera, and Udemy. 
             Get reviews, ratings, and personalized recommendations all in one place.
           </p>
+
+          {/* Search Bar */}
+          <div className="max-w-2xl mx-auto mt-8 mb-8">
+            <SearchBar />
+          </div>
+
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link to="/courses">
-     <Button
-  size="lg"
-  className="bg-blue-200 hover:bg-blue-300 px-8 py-3 text-black flex items-center"
->
-  <Search className="w-5 h-5 mr-2 text-black" />
-  <span className="text-black">Explore Courses</span>
-</Button>
-
-
-
-            </Link>
-            <Link to="/signup">
-              <Button size="lg" variant="outline" className="border-blue-600 text-blue-600 hover:bg-blue-50 px-8 py-3">
-                Get Started
+              <Button
+                size="lg"
+                className="bg-blue-200 hover:bg-blue-300 px-8 py-3 text-black flex items-center"
+              >
+                <Search className="w-5 h-5 mr-2 text-black" />
+                <span className="text-black">Explore Courses</span>
               </Button>
             </Link>
           </div>
@@ -54,7 +55,6 @@ const Dashboard = () => {
             {[
               { number: '10,000+', label: 'Courses Available', color: 'text-blue-600' },
               { number: '500K+', label: 'Student Reviews', color: 'text-purple-600' },
-              { number: '95%', label: 'Satisfaction Rate', color: 'text-green-600' },
               { number: '24/7', label: 'Course Access', color: 'text-orange-600' }
             ].map((stat, i) => (
               <div key={i} className="space-y-2">
@@ -63,6 +63,55 @@ const Dashboard = () => {
               </div>
             ))}
           </div>
+        </div>
+      </section>
+
+      {/* Insights Section */}
+      <section className="py-8 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <h2 className="text-lg font-semibold flex items-center gap-2 mb-6">
+            Your Learning Insights
+          </h2>
+
+          <div className="grid gap-4 md:grid-cols-3">
+            <div className="p-6 rounded-lg bg-blue-50 text-center">
+              <div className="text-2xl font-bold text-blue-600">2 courses</div>
+              <div className="text-sm text-gray-600">Wishlisted</div>
+            </div>
+
+            <div className="p-6 rounded-lg bg-green-50 text-center">
+              <div className="text-2xl font-bold text-green-600">2</div>
+              <div className="text-sm text-gray-600">Completed Courses</div>
+            </div>
+
+            <div className="p-6 rounded-lg bg-purple-50 text-center">
+              <div className="text-lg font-semibold text-purple-600">Intermediate</div>
+              <div className="text-sm text-gray-600">Current Level</div>
+            </div>
+          </div>
+
+          {/* Interests */}
+          <div className="mt-6">
+            <h3 className="text-base font-semibold mb-3">Your Interests</h3>
+            <div className="flex flex-wrap gap-2">
+              {["Data Science", "Machine Learning", "Computer Science"].map((interest, i) => (
+                <span
+                  key={i}
+                  className="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm flex items-center gap-1"
+                >
+                  {interest}
+                  <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
+                </span>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Popular Subjects */}
+      <section className="py-12 bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <PopularSubjects />
         </div>
       </section>
 
@@ -107,12 +156,9 @@ const Dashboard = () => {
                 </CardContent>
                 <CardFooter className="p-6 pt-0">
                   <Link to={`/course/${course.id}`} className="w-full">
-         <Button className="w-full bg-blue-600 hover:bg-blue-700">
-  <span className="text-white">View Details</span>
-</Button>
-
-
-
+                    <Button className="w-full bg-blue-600 hover:bg-blue-700 text-black">
+                      View Details
+                    </Button>
                   </Link>
                 </CardFooter>
               </Card>
@@ -124,31 +170,6 @@ const Dashboard = () => {
                 View All Courses
               </Button>
             </Link>
-          </div>
-        </div>
-      </section>
-
-      {/* Popular Categories */}
-      <section className="py-16 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">Popular Categories</h2>
-            <p className="text-lg text-gray-600">Explore courses by subject</p>
-          </div>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-            {popularCategories.map((category) => (
-              <Link key={category.id} to={`/courses?category=${category.name}`}>
-                <Card className="p-6 text-center hover:shadow-md transition-shadow cursor-pointer group">
-                  <div className="mb-4">
-                    <div className="w-12 h-12 bg-gradient-to-r from-blue-100 to-purple-100 rounded-lg mx-auto flex items-center justify-center group-hover:from-blue-200 group-hover:to-purple-200 transition-colors">
-                      <TrendingUp className="w-6 h-6 text-blue-600" />
-                    </div>
-                  </div>
-                  <h3 className="font-semibold text-gray-900 mb-2">{category.name}</h3>
-                  <p className="text-sm text-gray-500">{category.count} courses</p>
-                </Card>
-              </Link>
-            ))}
           </div>
         </div>
       </section>
@@ -184,15 +205,6 @@ const Dashboard = () => {
           <p className="text-xl text-blue-100 mb-8 max-w-2xl mx-auto">
             Join thousands of learners in CourseXpert to find your perfect course
           </p>
-          <Link to="/signup">
-           <Button
-  size="lg"
-  className="bg-white text-blue-600 hover:bg-gray-100 px-8 py-3 font-semibold"
->
-  <span className="text-blue-600">Create an Account</span>
-</Button>
-
-          </Link>
         </div>
       </section>
     </div>

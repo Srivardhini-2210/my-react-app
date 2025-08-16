@@ -17,7 +17,7 @@ export function CardContent({ children }) {
 }
 export function CardFooter({ children, className, ...props }) {
   return (
-    <div className={`px-6 py-4 border-t ${className || ""}`} {...props}>
+    <div className={`p-4 border-t ${className || ""}`} {...props}>
       {children}
     </div>
   );
